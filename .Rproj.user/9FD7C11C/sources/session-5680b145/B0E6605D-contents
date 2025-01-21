@@ -1,0 +1,470 @@
+library(acmeDLNM)
+
+load(file = "test_env-100.RData")
+
+dat.gen <- GenerateData(fEtype = "cubic", wltype = "type1",
+                        Nt = 2000,
+                        theta = 8,
+                        maxL = 14,
+                        verbose = TRUE,
+                        interpolate = TRUE)
+
+dat <- data.frame(x1 = dat.gen$x1,
+                  x2 = dat.gen$x2,
+                  x3 = dat.gen$x3,
+                  t = dat.gen$t,
+                  y = dat.gen$y)
+
+
+results <- acmeDLNM(formula = y~sX(t, x1+x2+x3),
+                              dat = dat,
+                              kw = 20,
+                              kE = 40,
+                              maxL = 14,
+                              verbose = TRUE)
+
+
+
+library(aceDLNM)
+library(mgcv)
+
+
+maxL <- 14
+theta <- 8
+
+Nt <- 3000
+
+dat.gen <- GenerateData(fEtype = fEtype, wltype = "type1",
+                        Nt = Nt,
+                        theta = theta,
+                        maxL = maxL,
+                        fE.set = function(x) 3*sin(x/20),
+                        interpolate = TRUE)
+dat <- data.frame(x = dat.gen$x,
+                  t = dat.gen$t,
+                  y = dat.gen$y)
+mean(dat$y)
+results <- DLNMspline(formula = y~sX(t, x),
+                      dat = dat,
+                      kw = 20,
+                      kE = 20,
+                      maxL = maxL,
+                      verbose = TRUE)
+
+summary(results, plot = TRUE, true.function = dat.gen$true.f)
+
+
+wltype <- "type1"
+
+fEtype <- "cubic"
+fEtype <- "quadratic"
+fEtype <- "linear"
+
+
+
+## START example for random effect
+library(aceDLNMcppadBFGS)
+# detach("package:aceDLNMcppad", unload = TRUE)
+
+# library(aceDLNM)
+
+library(mgcv)
+
+maxL <- 14
+theta <- 8
+Nt <- 2000
+
+gt <- function(x) sin(x/150)
+ttmp <- 1:(Nt+14)
+ttmp <- ttmp[-(1:maxL)]
+meangt <- mean(gt(ttmp))
+otherterm1 <- data.frame(trend = gt(ttmp) - meangt,
+                        intercept = 0)
+otherterm2 <- data.frame(trend = gt(ttmp) - meangt,
+                         intercept = 1)
+
+dat.gen1 <- GenerateData(fEtype = "quadratic", wltype = "type1",
+                        Nt = Nt,
+                        theta = theta,
+                        maxL = maxL,
+                        interpolate = TRUE,
+                        other = otherterm1)
+
+
+dat.gen2 <- GenerateData(fEtype = "quadratic", wltype = "type1",
+                                  Nt = Nt,
+                                  theta = theta,
+                                  maxL = maxL,
+                                  interpolate = TRUE,
+                                  other = otherterm2)
+
+
+dat <- data.frame(x = c(dat.gen1$x, dat.gen2$x),
+                  t = c(dat.gen1$t, dat.gen2$t),
+                  y = c(dat.gen1$y, 2*dat.gen2$y),
+                  id = as.factor(c(rep("a", Nt+14), rep("b",  Nt+14))),
+                  logpop = log(c(rep(1000,  Nt+14), rep(2000,  Nt+14))))
+
+
+# dat.list <- lapply(1:100, function(ii) {
+#   int <- rnorm(1, mean = 0, sd = 1)
+#   otherterm0 <- data.frame(trend = gt(ttmp) - meangt,
+#                            intercept = int)
+#   dat.gen0 <- aceDLNM::GenerateData(fEtype = "quadratic", wltype = "type1",
+#                                     Nt = Nt,
+#                                     theta = theta,
+#                                     maxL = maxL,
+#                                     interpolate = TRUE,
+#                                     other = otherterm0)
+#   return(data.frame(x = dat.gen0$x,
+#                     t = dat.gen0$t,
+#                     y = dat.gen0$y,
+#                     id = as.character(ii)))
+#                     # logpop = log(rep(1, 1014))))
+# })
+#
+#
+# dat <- data.table::rbindlist(dat.list)
+# dat$id <- as.factor(dat$id)
+# dat$logpop <- 0
+#
+# mean(dat$y)
+
+
+results <- aceDLNM::aceDLNM(formula = y~sX(t, x, by = id),
+                                     smooth = ~ s(t, bs = "bs") + s(id, bs = "re"),
+                                     offset = ~ logpop,
+                                     dat = dat,
+                                     kw = 20,
+                                     kE = 20,
+                                     maxL = maxL,
+                                     verbose = TRUE)
+
+results <- aceDLNMcppadBFGS::aceDLNM(formula = y~sX(t, x, by = id),
+                   smooth = ~ s(t, bs = "bs") + s(id, bs = "re"),
+                   offset = ~ logpop,
+                   dat = dat,
+                   kw = 20,
+                   kE = 20,
+                   maxL = maxL,
+                   verbose = TRUE)
+
+
+LAML:  5735.062
+
+parameters: 4 4 4 4 4
+Gradient:  665.6997 -1.498738 -3.153761 9.533529 13.89569
+
+LAML:  7737.086
+
+parameters: -2 5.498738 7.153761 -5.533529 -8
+Gradient:  -1404.122 3.173416 -1.41739 -3.983249 -0.4999113
+
+true.function <- dat.gen1$true.f
+
+true.function$smooth <- function(x,var){
+  if(var == "t") gt(x) - meangt
+}
+
+summary(results, plot = TRUE, true.function = true.function)
+
+### END example for random effect
+
+
+
+
+results2 <- DLNMspline(formula = y~sX(t, x),
+                      dat = dat,
+                      # pc = 20,
+                      kw = 20,
+                      kE = 20,
+                      maxL = 2*maxL,
+                      eta = FALSE,
+                      verbose = TRUE)
+
+summary(results2, plot = TRUE, true.function = dat.gen$true.f)
+
+summ <- summary(results, plot = TRUE, true.function = dat.gen$true.f,
+                E0 = 20)
+
+summ <- summary(results, plot = FALSE, true.function = dat.gen$true.f)
+summ2 <- summary(results2, plot = FALSE, true.function = dat.gen$true.f)
+
+summ$AIC
+summ2$AIC
+
+summ <- summary(results, plot = TRUE, true.function = dat.gen$true.f,
+                E0 = 20,
+                contrast = TRUE, contrast.lower = 0, contrast.upper = 1)
+
+residuals(results, plot = TRUE)
+
+with(summ$est$contrast,
+     plot(E, mean, type = "l"))
+with(summ$est$contrast,
+     lines(E, ul, lty = "dashed"))
+with(summ$est$contrast,
+     lines(E, ll, lty = "dashed"))
+
+t <- 1:1000
+x <- sin(t)
+
+
+
+knots_x <- c(rep(t[1]-1-0.2,4), t[1]-0.5, t, t[length(t)]+0.5, rep(t[length(t)]+1+0.2,4))
+# knots_x <- c(rep(t[1]-1.5,3),t[1]-0.99, t, t[length(t)]+0.99, rep(t[length(t)]+1.5,3))
+X <- splines::splineDesign(knots = knots_x, x = knots_x, outer.ok = TRUE)
+## interpolate = TRUE
+## set points for boundary and auxiliary boundary
+Xsparse <- as(X, "dgCMatrix")
+alpha_x <- DLNMspline:::Interpolate(Xsparse, c(rep(0,4), x[1], x, x[length(x)], rep(0,4)))
+
+knots_x <- c(rep(t[1]-1.5,3),t[1]-1.1, t, t[length(t)]+1.1, rep(t[length(t)]+1.5,3))
+X <- splines::splineDesign(knots = knots_x, x = knots_x, outer.ok = TRUE)
+## interpolate = TRUE
+## set points for boundary and auxiliary boundary
+Xsparse <- as(X, "dgCMatrix")
+alpha_x <- DLNMspline:::Interpolate(Xsparse, c(rep(0,4),x,rep(0,4)))
+
+DLNMspline:::deBoor(0.5, knots_x, alpha_x, 4)
+DLNMspline:::deBoor(t[1], knots_x, alpha_x, 4)
+DLNMspline:::deBoor(1002.1, knots_x, alpha_x, 4)
+
+xx <- sapply(seq(0, 10, length.out = 100), function(t.) DLNMspline:::deBoor(t., knots_x, alpha_x, 4))
+plot(seq(0, 10, length.out = 100), xx, type = "l")
+points(1:9, x[1:9])
+
+kx <- 10
+t <- 1:1000
+SSx <- mgcv::smoothCon(s(t, bs = "bs", k = kx),
+                       absorb.cons = FALSE,
+                       data = data.frame(t = t))[[1]] ## reparameterize it later
+SSx$knots
+
+
+E.generate <- dat.gen$E.sim
+
+
+wl <- dat.gen$true.f$wl
+Xt.deBoor <- function(tnew) as.numeric(DLNMspline:::deBoor(tnew, dat.gen$knots_x, dat.gen$alpha_x, 4))
+plot(seq(1,100,length.out = 1000), sapply(seq(1,100,length.out = 1000), Xt.deBoor), type = "l")
+points(1:100, dat.gen$x[1:100], col = "red")
+
+E.numint <- sapply((1:2000)+14, function(s) integrate(Vectorize(function(l) Xt.deBoor(s-l+0.5) * wl(l) ), lower = 0, upper = 15)$value)
+
+E.numint - E.generate
+
+plot(1:2000, E.generate, type = "l")
+lines(1:2000, E.numint, col = "red")
+
+
+
+
+
+
+
+
+
+###
+library(aceDLNM)
+
+gt <- function(x) sin(x/150)
+
+curve(gt, 1, 6573)
+# gt <- function(x) 0.2*sin(x/150)
+maxL <- 14
+theta <- 8
+
+Nt <- 3000
+wltype <- "type1"
+fEtype <- "quadratic"
+
+set.seed(as.numeric(2))
+
+ttmp <- 1:(2*maxL+Nt+100)
+ttmp <- ttmp[-(1:maxL)]
+meangt <- mean(gt(ttmp))
+otherterm <- data.frame(trend = gt(ttmp) - meangt,
+                        intercept = 0)
+
+
+dat.gen.DLNM <- GenerateData(fEtype = fEtype, wltype = wltype,
+                             Nt = Nt+100+maxL,
+                             theta = theta,
+                             maxL = maxL,
+                             other = otherterm,
+                             interpolate = TRUE)
+x <- dat.gen.DLNM$x # PM2.5
+t <- dat.gen.DLNM$t # time
+
+## all data
+dat.DLNM.all <- data.frame(x = dat.gen.DLNM$x,
+                           t = dat.gen.DLNM$t,
+                           y = dat.gen.DLNM$y)
+
+## data for test
+dat.DLNM.test <- dat.DLNM.all[-c(1:(Nt+maxL)), ]
+dat.DLNM.test <- subset(dat.DLNM.test, select = -c(y)) # delete outcome variable for testing
+
+## data for train
+dat.DLNM <- dat.DLNM.all[1:(Nt+maxL),]
+
+
+mod.mgcv <- mgcv::bam(y~s(x, bs = "bs", k = 20) + s(t, bs = "bs", k = 20),
+                      data = dat.DLNM,
+                      family = nb(),
+                      discrete = TRUE)
+log(mod.mgcv$sp)
+exp(family(mod.mgcv)$getTheta()) # theta
+
+results <- aceDLNMcppadBFGS::aceDLNM(formula = y~sX(t, x),
+                      smooth = ~s(t, bs = "bs", k = 20),
+                      dat = dat.DLNM,
+                      pc = NULL,
+                      kw = 20,
+                      kE = 20,
+                      maxL = maxL,
+                      eta = FALSE,
+                      verbose = TRUE)
+
+
+# new: 58.29525 seconds
+# took 43.11151 seconds
+
+## 2.060402  4.795206  9.213105 -2.132753
+# parameters: 2.060151 4.651358 8.941074 5.180957
+# Gradient:  -0.0003048149 4.618953e-05 4.834253e-05 0.0001118544
+#
+# final  value 1586.658461
+# converged
+
+true.function <- dat.gen.DLNM$true.f
+
+true.function$smooth <- function(x,var){
+  if(var == "t") gt(x) - meangt
+}
+
+summary(results, plot = TRUE, true.function = true.function)
+
+results$opttime # 196
+# 196 198
+
+# 202, 200
+
+
+
+results2 <- aceDLNM(formula = y~sX(t, x),
+                      # smooth = ~s(t, k = 40),
+                      dat = dat.DLNM,
+                      pc = NULL,
+                      kw = 20,
+                      kE = 20,
+                      maxL = maxL,
+                      eta = FALSE,
+                      verbose = TRUE)
+
+dat.DLNM$t.sin <- sin(pi * dat.DLNM$t/430)
+results3 <- DLNMspline(formula = y~sX(t, x),
+                       unpen.smooth = ~s(t, k = 10),
+                       # fe.varying = ~t.sin,
+                       dat = dat.DLNM,
+                       pc = NULL,
+                       kw = 20,
+                       kE = 20,
+                       maxL = maxL,
+                       eta = FALSE,
+                       verbose = TRUE)
+
+residuals(results3, plot = TRUE)
+
+
+p <- residuals(results2, plot = TRUE)
+residuals(results3, plot = TRUE)
+
+true.function <- dat.gen.DLNM$true.f
+
+true.function$smooth <- function(x,var){
+  if(var == "t") gt(x) - meangt
+}
+
+
+summary(results3,
+       E.eval = seq(dat.gen.DLNM$true.f$Emin, dat.gen.DLNM$true.f$Emax, length.out = 500),
+       true.function = true.function, plot = TRUE)
+
+
+
+
+## repeated knots
+maxLreal <- 15
+kw <- 20
+SSw <- mgcv::smoothCon(s(l, bs = "bs", k = 20),
+                       # knots =
+                       absorb.cons = FALSE,
+                       data = data.frame(l = seq(0, maxLreal, length.out = max(maxLreal, 500))))[[1]]
+knots_w <- SSw$knots
+
+length(knots_w)
+knots_w[5]
+
+SSw.repeat <- mgcv::smoothCon(s(l, bs = "bs", k = kw),
+                              knots = list(l = sort(c(-1, -1, -1, -1, 0+eps, c(1-eps,1,1+eps), c(2-eps,2,2+eps), seq(3, maxLreal-eps, length.out = kw-4-7), maxLreal+1, maxLreal+1, maxLreal+1, maxLreal+1))),
+                              absorb.cons = FALSE,
+                              data = dat)
+
+SSw.repeat[[1]]$knots
+
+eps <- 1e-3
+kw <- 20
+dat <- data.frame(l = seq(0, maxLreal, length.out = max(maxLreal, 500)))
+SSw.repeat <- mgcv::smoothCon(s(l, bs = "gps", k = kw),
+                       knots = list(l = sort(c(0+eps, c(1-eps,1,1+eps), c(2-eps,2,2+eps), seq(3, maxLreal-eps, length.out = kw-4-7)))),
+                       absorb.cons = FALSE,
+                       data = dat)
+
+
+
+knots_w_try <- knots_w
+knots_w_try[5] <- 2
+mgcv::smoothCon(s(l, bs = "cr", k = 10),
+                knots = seq(1,10, length = 10),
+                absorb.cons = FALSE,
+                data = data.frame(l = seq(0, maxLreal, length.out = max(maxLreal, 500))))
+
+library(gps)
+x <- rnorm(100)
+y <- rnorm(100)
+SSw.uneven <- mgcv::smoothCon(s(x, bs = 'gps', k = 10),
+             knots = list(x = c(0,1)),
+             absorb.cons = FALSE,
+             data = data.frame(x = x))  ## provide interior knots
+
+
+.rs.restartR()
+t <- c(-1,0,0,0,1:10,11,11,11,12)
+aceDLNM:::Bsplinevec2(1, t, 4)
+
+t <- c(-3,-1,-1,-1,1:10,13,13,13,19)
+aceDLNM:::Bsplinevec2(1, t, 4)
+
+t <- c(-3,-1,-1,-1,1:10,16,16,16,19)
+
+aceDLNM:::Bsplinevec2(1, t, 4)
+aceDLNM:::Bsplinevec2(16, t, 4)
+
+aceDLNM:::Bsplinevec2nd(0, t, 4)
+
+aceDLNM:::Bspline2nd(-0.99, 1, t, 4)
+
+aceDLNM:::Bspline1st(-1.1, 1, t, 4)
+
+
+aceDLNM:::Bspline1st(-0.499, 2, t, 4)
+
+aceDLNM:::Bsplinevec2(-0.0001, t, 1)
+aceDLNM:::Bsplinevec2(0, t, 3)
+
+
+aceDLNM:::Bsplinevec2nd(11.998, t, 4)
+aceDLNM:::Bsplinevec2(11.998, t, 2) * 6
+aceDLNM:::Bsplinevec2(11.9999, t, 2)

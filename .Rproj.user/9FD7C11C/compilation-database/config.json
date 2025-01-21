@@ -1,0 +1,27 @@
+{
+    "args": [
+        "-std=gnu++17",
+        "-I/Library/Frameworks/R.framework/Resources/include",
+        "-DNDEBUG",
+        "-I/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/include",
+        "-I/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/inst/include",
+        "-I/opt/R/arm64/include",
+        "-fPIC",
+        "-falign-functions=64",
+        "-I/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/Rcpp/include",
+        "-I/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library/RcppEigen/include",
+        "-DEIGEN_DONT_VECTORIZE",
+        "-I/Library/Developer/CommandLineTools/usr/lib/clang/16.0.0/include",
+        "-I/usr/local/include",
+        "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
+        "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/16/include",
+        "-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+        "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"
+    ],
+    "pch": "RcppEigen",
+    "is_cpp": true,
+    "hash": "17374121831737422300",
+    "compiler": "10229741234023531025",
+    "rversion": "4.4.2",
+    "dbversion": 4
+}
