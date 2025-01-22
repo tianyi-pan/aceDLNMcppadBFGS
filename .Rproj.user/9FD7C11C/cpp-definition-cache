@@ -21894,7 +21894,7 @@
     },
     {
         "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-        "file_last_write": 1737499772.0,
+        "file_last_write": 1737500137.0,
         "definitions": [
             {
                 "usr": "c:@F@LAML_fn#&$@S@Model#",
@@ -21902,7 +21902,7 @@
                 "parent_name": "",
                 "name": "LAML_fn(Model &)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 634,
+                "line": 17,
                 "column": 8,
                 "hidden": false
             },
@@ -21912,7 +21912,7 @@
                 "parent_name": "",
                 "name": "LAMLResult",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 640,
+                "line": 23,
                 "column": 8,
                 "hidden": false
             },
@@ -21922,7 +21922,7 @@
                 "parent_name": "",
                 "name": "LAMLTape(Model &, Modelcppad &)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 646,
+                "line": 29,
                 "column": 6,
                 "hidden": false
             },
@@ -21932,7 +21932,7 @@
                 "parent_name": "",
                 "name": "LAML(Model &, Modelcppad &)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 704,
+                "line": 87,
                 "column": 12,
                 "hidden": false
             },
@@ -21942,7 +21942,7 @@
                 "parent_name": "",
                 "name": "aceDLNMbuild(const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 764,
+                "line": 147,
                 "column": 6,
                 "hidden": false
             },
@@ -21952,7 +21952,7 @@
                 "parent_name": "",
                 "name": "aceDLNMopt(SEXP, SEXP, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, bool)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 829,
+                "line": 212,
                 "column": 6,
                 "hidden": false
             },
@@ -21962,7 +21962,7 @@
                 "parent_name": "",
                 "name": "aceDLNMCI(const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, const int, const int, bool, bool, bool)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 897,
+                "line": 280,
                 "column": 6,
                 "hidden": false
             },
@@ -21972,7 +21972,7 @@
                 "parent_name": "",
                 "name": "ConditionalAIC(const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1113,
+                "line": 496,
                 "column": 6,
                 "hidden": false
             },
@@ -21982,7 +21982,7 @@
                 "parent_name": "",
                 "name": "Model_nosmooth",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1160,
+                "line": 545,
                 "column": 7,
                 "hidden": false
             },
@@ -21992,7 +21992,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "setAlphaF(const Vec)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1355,
+                "line": 740,
                 "column": 8,
                 "hidden": false
             },
@@ -22002,7 +22002,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "setPhi(const Vec)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1364,
+                "line": 749,
                 "column": 8,
                 "hidden": false
             },
@@ -22012,7 +22012,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "setBetaF(const Vec)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1388,
+                "line": 773,
                 "column": 8,
                 "hidden": false
             },
@@ -22022,7 +22022,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "setLogTheta(const Scalar)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1396,
+                "line": 781,
                 "column": 8,
                 "hidden": false
             },
@@ -22032,7 +22032,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "setLogSmoothingF(const Scalar)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1401,
+                "line": 786,
                 "column": 8,
                 "hidden": false
             },
@@ -22042,7 +22042,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "setLogSmoothingW(const Scalar)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1406,
+                "line": 791,
                 "column": 8,
                 "hidden": false
             },
@@ -22052,7 +22052,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "getB_inner",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1412,
+                "line": 797,
                 "column": 7,
                 "hidden": false
             },
@@ -22062,7 +22062,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "getDw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1416,
+                "line": 801,
                 "column": 7,
                 "hidden": false
             },
@@ -22072,7 +22072,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "getknots_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1420,
+                "line": 805,
                 "column": 7,
                 "hidden": false
             },
@@ -22082,7 +22082,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "derivative_coef",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1427,
+                "line": 812,
                 "column": 8,
                 "hidden": false
             },
@@ -22092,7 +22092,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "derivative_he",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1463,
+                "line": 848,
                 "column": 8,
                 "hidden": false
             },
@@ -22102,7 +22102,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "derivative_full",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1490,
+                "line": 875,
                 "column": 8,
                 "hidden": false
             },
@@ -22112,7 +22112,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "derivative_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1524,
+                "line": 909,
                 "column": 8,
                 "hidden": false
             },
@@ -22122,7 +22122,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "NegativeLogLikelihood",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1553,
+                "line": 938,
                 "column": 8,
                 "hidden": false
             },
@@ -22132,7 +22132,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "NegativeLogLikelihood_l",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1574,
+                "line": 959,
                 "column": 8,
                 "hidden": false
             },
@@ -22142,7 +22142,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "prepare_AIC",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1586,
+                "line": 971,
                 "column": 8,
                 "hidden": false
             },
@@ -22152,7 +22152,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dlogdensity_dmu",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1602,
+                "line": 987,
                 "column": 7,
                 "hidden": false
             },
@@ -22162,7 +22162,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2logdensity_dmudmu",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1610,
+                "line": 995,
                 "column": 7,
                 "hidden": false
             },
@@ -22172,7 +22172,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dlogdensity_dtheta",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1618,
+                "line": 1003,
                 "column": 10,
                 "hidden": false
             },
@@ -22182,7 +22182,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2logdensity_dmudtheta",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1638,
+                "line": 1023,
                 "column": 7,
                 "hidden": false
             },
@@ -22192,7 +22192,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dlogmu_df",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1650,
+                "line": 1035,
                 "column": 7,
                 "hidden": false
             },
@@ -22202,7 +22202,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dmu_df",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1654,
+                "line": 1039,
                 "column": 7,
                 "hidden": false
             },
@@ -22212,7 +22212,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dlogmu_dw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1662,
+                "line": 1047,
                 "column": 7,
                 "hidden": false
             },
@@ -22222,7 +22222,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dmu_dw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1672,
+                "line": 1057,
                 "column": 7,
                 "hidden": false
             },
@@ -22232,7 +22232,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dlogmu_dbetaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1681,
+                "line": 1066,
                 "column": 7,
                 "hidden": false
             },
@@ -22242,7 +22242,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dmu_dbetaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1685,
+                "line": 1070,
                 "column": 7,
                 "hidden": false
             },
@@ -22252,7 +22252,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2mu_dfdf",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1695,
+                "line": 1080,
                 "column": 20,
                 "hidden": false
             },
@@ -22262,7 +22262,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2mu_dbetaFdbetaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1703,
+                "line": 1088,
                 "column": 20,
                 "hidden": false
             },
@@ -22272,7 +22272,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2logmu_dwdw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1711,
+                "line": 1096,
                 "column": 20,
                 "hidden": false
             },
@@ -22282,7 +22282,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2mu_dwdw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1720,
+                "line": 1105,
                 "column": 20,
                 "hidden": false
             },
@@ -22292,7 +22292,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2logmu_dfdw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1728,
+                "line": 1113,
                 "column": 20,
                 "hidden": false
             },
@@ -22302,7 +22302,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2mu_dfdw",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1736,
+                "line": 1121,
                 "column": 20,
                 "hidden": false
             },
@@ -22312,7 +22312,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "dw_dphi",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1748,
+                "line": 1133,
                 "column": 7,
                 "hidden": false
             },
@@ -22322,7 +22322,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "d2w_dphidphi",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1769,
+                "line": 1154,
                 "column": 20,
                 "hidden": false
             },
@@ -22332,7 +22332,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_alpha_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1793,
+                "line": 1178,
                 "column": 7,
                 "hidden": false
             },
@@ -22342,7 +22342,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_betaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1797,
+                "line": 1182,
                 "column": 7,
                 "hidden": false
             },
@@ -22352,7 +22352,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_alpha_w",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1801,
+                "line": 1186,
                 "column": 7,
                 "hidden": false
             },
@@ -22362,7 +22362,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_phi",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1812,
+                "line": 1197,
                 "column": 7,
                 "hidden": false
             },
@@ -22372,7 +22372,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_log_smoothing_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1816,
+                "line": 1201,
                 "column": 10,
                 "hidden": false
             },
@@ -22382,7 +22382,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_log_smoothing_w",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1819,
+                "line": 1204,
                 "column": 10,
                 "hidden": false
             },
@@ -22392,7 +22392,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "gr_log_theta",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1822,
+                "line": 1207,
                 "column": 10,
                 "hidden": false
             },
@@ -22402,7 +22402,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1828,
+                "line": 1213,
                 "column": 7,
                 "hidden": false
             },
@@ -22412,7 +22412,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "I_alpha_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1839,
+                "line": 1224,
                 "column": 7,
                 "hidden": false
             },
@@ -22422,7 +22422,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_betaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1850,
+                "line": 1235,
                 "column": 7,
                 "hidden": false
             },
@@ -22432,7 +22432,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_w",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1861,
+                "line": 1246,
                 "column": 7,
                 "hidden": false
             },
@@ -22442,7 +22442,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "I_alpha_w",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1876,
+                "line": 1261,
                 "column": 7,
                 "hidden": false
             },
@@ -22452,7 +22452,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_phi",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1888,
+                "line": 1273,
                 "column": 7,
                 "hidden": false
             },
@@ -22462,7 +22462,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "I_phi",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1898,
+                "line": 1283,
                 "column": 7,
                 "hidden": false
             },
@@ -22472,7 +22472,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_f_alpha_w",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1908,
+                "line": 1293,
                 "column": 7,
                 "hidden": false
             },
@@ -22482,7 +22482,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_f_phi",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1920,
+                "line": 1305,
                 "column": 7,
                 "hidden": false
             },
@@ -22492,7 +22492,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_f_betaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1924,
+                "line": 1309,
                 "column": 7,
                 "hidden": false
             },
@@ -22502,7 +22502,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_phi_betaF",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1935,
+                "line": 1320,
                 "column": 7,
                 "hidden": false
             },
@@ -22512,7 +22512,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_f_log_smoothing_f",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1957,
+                "line": 1342,
                 "column": 7,
                 "hidden": false
             },
@@ -22522,7 +22522,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_phi_log_smoothing_w",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1960,
+                "line": 1345,
                 "column": 7,
                 "hidden": false
             },
@@ -22532,7 +22532,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_alpha_f_log_theta",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1974,
+                "line": 1359,
                 "column": 7,
                 "hidden": false
             },
@@ -22542,7 +22542,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_phi_log_theta",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1978,
+                "line": 1363,
                 "column": 7,
                 "hidden": false
             },
@@ -22552,7 +22552,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "he_betaF_log_theta",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1982,
+                "line": 1367,
                 "column": 7,
                 "hidden": false
             },
@@ -22562,7 +22562,7 @@
                 "parent_name": "Model_nosmooth",
                 "name": "logdetH05",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 1990,
+                "line": 1375,
                 "column": 10,
                 "hidden": false
             },
@@ -22572,7 +22572,7 @@
                 "parent_name": "",
                 "name": "PL_nosmooth(Model_nosmooth &, bool)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2016,
+                "line": 1401,
                 "column": 6,
                 "hidden": false
             },
@@ -22582,7 +22582,7 @@
                 "parent_name": "",
                 "name": "logdetH05_nosmooth(Vec &, Vec &, Vec &, Scalar &, Scalar &, Scalar &, Model_nosmooth &)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2233,
+                "line": 1618,
                 "column": 8,
                 "hidden": false
             },
@@ -22592,7 +22592,7 @@
                 "parent_name": "",
                 "name": "LAML_fn_nosmooth(Model_nosmooth &)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2254,
+                "line": 1639,
                 "column": 8,
                 "hidden": false
             },
@@ -22602,7 +22602,7 @@
                 "parent_name": "",
                 "name": "LAMLResult_nosmooth",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2260,
+                "line": 1645,
                 "column": 8,
                 "hidden": false
             },
@@ -22612,7 +22612,7 @@
                 "parent_name": "",
                 "name": "Inner_nosmooth(Model_nosmooth &, bool)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2266,
+                "line": 1651,
                 "column": 6,
                 "hidden": false
             },
@@ -22622,7 +22622,7 @@
                 "parent_name": "",
                 "name": "LAML_nosmooth(Model_nosmooth &)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2618,
+                "line": 2003,
                 "column": 21,
                 "hidden": false
             },
@@ -22632,7 +22632,7 @@
                 "parent_name": "",
                 "name": "aceDLNMopt_nosmooth(const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd, bool)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2674,
+                "line": 2059,
                 "column": 6,
                 "hidden": false
             },
@@ -22642,7 +22642,7 @@
                 "parent_name": "",
                 "name": "aceDLNMCI_nosmooth(const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd, const int, const int, bool, bool, bool)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2727,
+                "line": 2112,
                 "column": 6,
                 "hidden": false
             },
@@ -22652,7 +22652,7 @@
                 "parent_name": "",
                 "name": "ConditionalAIC_nosmooth(const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::VectorXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::MatrixXd, const Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd, double, double, double, Eigen::VectorXd)",
                 "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNM.cpp",
-                "line": 2954,
+                "line": 2339,
                 "column": 6,
                 "hidden": false
             }
@@ -23548,7 +23548,7 @@
     },
     {
         "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNMeigenClass.hpp",
-        "file_last_write": 1737498938.0,
+        "file_last_write": 1737500606.0,
         "definitions": [
             {
                 "usr": "c:@F@choleskyAD#&$@N@Eigen@S@Matrix>#d#VI-1#VI-1#VI0#VI-1#VI-1#",
