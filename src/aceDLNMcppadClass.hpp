@@ -385,54 +385,25 @@ public:
   Vec eta;
   Vec eta_remaining; // remaining terms = Xfix * betaF + Xrand * betaR
   Vec mu; // log(mu) = eta + eta_remaining + Xoffset
-  Scalar NegLogL; // NegativeLogLikelihood value
 
 
   // Components for derivatives
 
-  Mat dlogmu_df_mat;
-  Mat dlogmu_dbetaR_mat;
-  Mat dlogmu_dbetaF_mat;
   Mat dlogmu_dw_mat;
   Vec dlogdensity_dmu_vec;
-  Mat dmu_df_mat;
-  Mat dmu_dbetaR_mat;
-  Mat dmu_dbetaF_mat;
   Mat dmu_dw_mat;
   Mat dw_dphi_mat;
-  Vec gr_alpha_w_vec;
+
   Vec d2logdensity_dmudmu_vec;
-  // std::vector<Mat> d2mu_dfdf_list;
-  // std::vector<Mat> d2mu_dbetaRdbetaR_list;
-  // std::vector<Mat> d2mu_dbetaFdbetaF_list;
-  // std::vector<Mat> d2logmu_dwdw_list;
-  // std::vector<Mat> d2mu_dwdw_list;
   std::vector<Mat> d2w_dphidphi_list;
-  // std::vector<Mat> d2logmu_dfdw_list;
-  // std::vector<Mat> d2mu_dfdw_list;
   Mat he_alpha_w_mat;
   Mat he_alpha_f_alpha_w_mat;
-  Scalar dlogdensity_dtheta_scalar;
-  // Scalar d2logdensity_dthetadtheta_scalar;
-  Vec d2logdensity_dmudtheta_vec;
 
 
   // gradient and hessian for updating alpha_f, betaR and betaF
-  Vec gr_inner_vec;
   Mat he_inner_mat;
 
-  // full gradient
-  Vec gr_alpha_f_vec;
-  Vec gr_betaR_vec;
-  Vec gr_betaF_vec;
-  Vec gr_phi_vec;
-  Scalar gr_log_smoothing_f_scalar;
-  Scalar gr_log_smoothing_w_scalar;
-  Scalar gr_log_theta_scalar;
-  Vec gr_logsmoothing_vec;
 
-  Vec gr_s_u_vec;
-  Vec gr_s_par_vec;
 
   // full hessian
   Mat he_alpha_f_mat;
@@ -445,36 +416,12 @@ public:
   Mat he_phi_betaF_mat;
   Mat he_phi_betaR_mat;
   Mat he_betaR_betaF_mat;
-  // Scalar he_log_smoothing_f_scalar;
-  // Scalar he_log_smoothing_w_scalar;
-  // Scalar he_log_theta_scalar;
-  Vec he_alpha_f_log_smoothing_f_vec;
-  Mat he_betaR_logsmoothing_mat;
-  Vec he_phi_log_smoothing_w_vec;
-  Vec he_alpha_f_log_theta_vec;
-  Vec he_phi_log_theta_vec;
-  Vec he_betaR_log_theta_vec;
-  Vec he_betaF_log_theta_vec;
 
   Mat he_s_u_mat;
-  Mat he_s_par_u_mat;
 
-  // To compute AIC
-  Scalar NegLogL_l; // NegativeLogLikelihood without penalty
-  // matrix for I (hessian of log likelihood without penalty)
-  Mat I_alpha_f_mat;
-  Mat I_betaR_mat;
-  Mat I_phi_mat;
-  Mat I_alpha_w_mat;
-  Mat I_mat; 
-
-  // results for profile likelihood
-  Eigen::VectorXd PL_gradient;
-  Eigen::MatrixXd PL_hessian;
-  int converge; // 0: converge. 99: not converge
 
   // AD tape for LAML
-  CppAD::ADFun<double> gr;
+  // CppAD::ADFun<double> gr;
   bool ifhastape = false;
 
   // Constructor
@@ -543,69 +490,59 @@ public:
       // Initialize the derivative components and NegativeLogLikelihood
       dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
       d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
-      gr_s_u_vec.resize(kw+kE-1+kbetaR+kbetaF);
+      
       he_s_u_mat.resize(kw+kE-1+kbetaR+kbetaF, kw+kE-1+kbetaR+kbetaF);
-      gr_s_par_vec.resize(3+p);
-      he_s_par_u_mat.resize(3+p, kw+kE-1+kbetaR+kbetaF);
-      gr_inner_vec.resize(kE+kbetaR+kbetaF);
-      he_inner_mat.resize(kE+kbetaR+kbetaF, kE+kbetaR+kbetaF);
 
       derivative_coef();
       derivative_he();
-      derivative_full();
-      NegativeLogLikelihood();
-
-      // Initialize PL
-      PL_gradient.resize(kw-1);
-      PL_hessian.resize(kw-1, kw-1);
     }
 
   // Functions to set parameters
   void setAlphaF(const Vec alpha_f_) {
     alpha_f = alpha_f_;
 
-    for (int i = 0; i < n; i++) {
-      eta(i) = Bf_matrix.row(i).dot(alpha_f);
-      mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    }
+    // for (int i = 0; i < n; i++) {
+    //   eta(i) = Bf_matrix.row(i).dot(alpha_f);
+    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
+    // }
   }
 
   void setPhi(const Vec phi_) {
     phi = phi_;
-    // re-generate
-    for (int j = 0; j < (kw - 1); j++) {
-      phi_long(j + 1) = phi(j);
-    }
-    alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
-    alpha_w_C = phi_long / alpha_w_C_denominator;
-    alpha_w_C_pen = phi / alpha_w_C_denominator;
-    E = B_inner * alpha_w_C;
-    Vec Bf;
+    // // re-generate
+    // for (int j = 0; j < (kw - 1); j++) {
+    //   phi_long(j + 1) = phi(j);
+    // }
+    // alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
+    // alpha_w_C = phi_long / alpha_w_C_denominator;
+    // alpha_w_C_pen = phi / alpha_w_C_denominator;
+    // E = B_inner * alpha_w_C;
+    // Vec Bf;
 
-    for (int i = 0; i < n; i++) {
-      Bf = BsplinevecCon(E(i), knots_f, 4, Zf);
-      Bf_matrix.row(i) = Bf;
-      eta(i) = Bf.dot(alpha_f);
-      mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    }
+    // for (int i = 0; i < n; i++) {
+    //   Bf = BsplinevecCon(E(i), knots_f, 4, Zf);
+    //   Bf_matrix.row(i) = Bf;
+    //   eta(i) = Bf.dot(alpha_f);
+    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
+    // }
 
-    dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
-    d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
+    // dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
+    // d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
 
   }
   void setBetaF(const Vec betaF_) {
     betaF = betaF_;
-    for (int i = 0; i < n; i++) {
-      eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
-      mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    }
+    // for (int i = 0; i < n; i++) {
+    //   eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
+    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
+    // }
   }
   void setBetaR(const Vec betaR_) {
     betaR = betaR_;
-    for (int i = 0; i < n; i++) {
-      eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
-      mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    }
+    // for (int i = 0; i < n; i++) {
+    //   eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
+    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
+    // }
   }
   void setLogTheta(const Scalar log_theta_) {
     log_theta = log_theta_;
@@ -626,52 +563,40 @@ public:
     for (int i = 0; i < p; i++) smoothing(i) = exp(logsmoothing(i));
   }
 
-  // get private members
-  Mat getB_inner () {
-    return B_inner;
-  }
 
-  Mat getDw () {
-    return Dw;
-  }
-
-  Vec getknots_f () {
-    return knots_f;
-  }
-
-  // Function to update derivatives.
-  // RUN the function derivative_coef(), derivative_he() and derivative_full() after update parameters.
-  // update derivatives related to spline coefficients alpha_f and phi, and betaR and betaF
   void derivative_coef() {
-    dlogmu_dw_mat = dlogmu_dw();
-    dlogmu_df_mat = dlogmu_df();
-    dlogmu_dbetaR_mat = dlogmu_dbetaR();
-    dlogmu_dbetaF_mat = dlogmu_dbetaF();
-    dlogdensity_dmu_vec = dlogdensity_dmu();
-    dmu_df_mat = dmu_df();
-    dmu_dbetaR_mat = dmu_dbetaR();
-    dmu_dbetaF_mat = dmu_dbetaF();
-    dmu_dw_mat = dmu_dw();
-    gr_alpha_w_vec = gr_alpha_w();
-    d2logdensity_dmudmu_vec = d2logdensity_dmudmu();
-    // d2mu_dfdf_list = d2mu_dfdf();
-    // d2mu_dbetaRdbetaR_list = d2mu_dbetaRdbetaR();
-    // d2mu_dbetaFdbetaF_list = d2mu_dbetaFdbetaF();
-    // d2logmu_dwdw_list = d2logmu_dwdw();
-    // d2mu_dwdw_list = d2mu_dwdw();
-    he_alpha_w_mat = he_alpha_w();
-    // d2logmu_dfdw_list = d2logmu_dfdw();
-    // d2mu_dfdw_list = d2mu_dfdw();
-    he_alpha_f_alpha_w_mat = he_alpha_f_alpha_w();
-    dlogdensity_dtheta_scalar = dlogdensity_dtheta();
-    // d2logdensity_dthetadtheta_scalar = d2logdensity_dthetadtheta();
-    d2logdensity_dmudtheta_vec = d2logdensity_dmudtheta();
+    // regenerate
+    for (int j = 0; j < (kw - 1); j++) {
+      phi_long(j + 1) = phi(j);
+    }
+    alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
+    alpha_w_C = phi_long / alpha_w_C_denominator;
+    alpha_w_C_pen = phi / alpha_w_C_denominator;
+    E = B_inner * alpha_w_C;
+    Vec Bf;
 
-    // obtain gradient
-    gr_alpha_f_vec = gr_alpha_f();
-    gr_betaR_vec = gr_betaR();
-    gr_betaF_vec = gr_betaF();
-    gr_phi_vec = gr_phi();
+    for (int i = 0; i < n; i++) {
+      Bf = BsplinevecCon(E(i), knots_f, 4, Zf);
+      Bf_matrix.row(i) = Bf;
+      eta(i) = Bf.dot(alpha_f);
+      eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
+      mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
+    }
+
+    dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
+    d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
+
+
+    dlogmu_dw_mat = dlogmu_dw();
+    dlogdensity_dmu_vec = dlogdensity_dmu();
+    dmu_dw_mat = dmu_dw();
+    d2logdensity_dmudmu_vec = d2logdensity_dmudmu();
+   
+    he_alpha_w_mat = he_alpha_w();
+   
+    he_alpha_f_alpha_w_mat = he_alpha_f_alpha_w();
+
+
     // obtain hessian
     he_alpha_f_mat = he_alpha_f();
     he_betaR_mat = he_betaR();
@@ -687,8 +612,7 @@ public:
 
   // update full gradient and hessian of alpha_f, phi and betaR and betaF
   void derivative_he () {
-    gr_s_u_vec << gr_alpha_f_vec, gr_phi_vec, gr_betaR_vec, gr_betaF_vec;
-
+    
 
     he_s_u_mat.setZero();
 
@@ -722,148 +646,8 @@ public:
     // he_s_u_mat = (he_s_u_mat + he_s_u_mat.transpose())/2.0;
   }
 
-  // update derivatives related to overdispersion and smoothing parameters
-  // Full derivative for LAML
-  void derivative_full () {
-    // obtain full gradient
+  
 
-    gr_log_smoothing_f_scalar = gr_log_smoothing_f();
-    gr_log_smoothing_w_scalar = gr_log_smoothing_w();
-    gr_log_theta_scalar = gr_log_theta();
-    gr_logsmoothing_vec = gr_logsmoothing();
-
-
-
-    // u represents spline coefficient alpha_f and phi, and betaR and betaF
-    // par represents overdispersion and smoothing parameters
-
-    gr_s_par_vec << gr_log_theta_scalar, gr_log_smoothing_f_scalar, gr_log_smoothing_w_scalar, gr_logsmoothing_vec;
-
-
-    // obtain full hessian
-    // he_log_smoothing_f_scalar = he_log_smoothing_f();
-    // he_log_smoothing_w_scalar = he_log_smoothing_w();
-    // he_log_theta_scalar = he_log_theta();
-    he_alpha_f_log_smoothing_f_vec = he_alpha_f_log_smoothing_f();
-    he_phi_log_smoothing_w_vec = he_phi_log_smoothing_w();
-    he_betaR_logsmoothing_mat = he_betaR_logsmoothing();
-    he_alpha_f_log_theta_vec = he_alpha_f_log_theta();
-    he_phi_log_theta_vec = he_phi_log_theta();
-    he_betaR_log_theta_vec = he_betaR_log_theta();
-    he_betaF_log_theta_vec = he_betaF_log_theta();
-
-
-    he_s_par_u_mat.setZero();
-
-
-
-    he_s_par_u_mat.row(0) << he_alpha_f_log_theta_vec.transpose(), he_phi_log_theta_vec.transpose(), he_betaR_log_theta_vec.transpose(), he_betaF_log_theta_vec.transpose();
-    he_s_par_u_mat.block(1, 0, 1, kE) = he_alpha_f_log_smoothing_f_vec.transpose();
-    he_s_par_u_mat.block(2, kE, 1, kw-1) = he_phi_log_smoothing_w_vec.transpose();
-    he_s_par_u_mat.block(3, kE+kw-1, p, kbetaR) = he_betaR_logsmoothing_mat.transpose();
-  }
-
-  // update variables related to alpha_f, betaR and betaF.
-  // Used only in updating alpha_f, betaR and betaF. .
-  void derivative_f () {
-    dlogmu_df_mat = dlogmu_df();
-    dlogmu_dbetaR_mat = dlogmu_dbetaR();
-    dlogmu_dbetaF_mat = dlogmu_dbetaF();
-    dlogdensity_dmu_vec = dlogdensity_dmu();
-    dmu_df_mat = dmu_df();
-    dmu_dbetaR_mat = dmu_dbetaR();
-    dmu_dbetaF_mat = dmu_dbetaF();
-    d2logdensity_dmudmu_vec = d2logdensity_dmudmu();
-    // d2mu_dfdf_list = d2mu_dfdf();
-    // d2mu_dbetaRdbetaR_list = d2mu_dbetaRdbetaR();
-    // d2mu_dbetaFdbetaF_list = d2mu_dbetaFdbetaF();
-
-    gr_alpha_f_vec = gr_alpha_f();
-    gr_betaR_vec = gr_betaR();
-    gr_betaF_vec = gr_betaF();
-
-    he_alpha_f_mat = he_alpha_f();
-    he_betaR_mat = he_betaR();
-    he_betaF_mat = he_betaF();
-    he_alpha_f_betaF_mat = he_alpha_f_betaF();
-    he_alpha_f_betaR_mat = he_alpha_f_betaR();
-    he_betaR_betaF_mat = he_betaR_betaF();
-
-    gr_inner_vec << gr_alpha_f_vec, gr_betaR_vec, gr_betaF_vec;
-
-    he_inner_mat.setZero();
-    he_inner_mat.block(0,0,kE,kE) = he_alpha_f_mat;
-    he_inner_mat.block(kE,kE,kbetaR,kbetaR) = he_betaR_mat;
-    he_inner_mat.block(kE+kbetaR,kE+kbetaR,kbetaF,kbetaF) = he_betaF_mat;
-
-    he_inner_mat.block(0,kE,kE,kbetaR) = he_alpha_f_betaR_mat;
-    he_inner_mat.block(0,kE+kbetaR,kE,kbetaF) = he_alpha_f_betaF_mat;
-    he_inner_mat.block(kE,kE+kbetaR,kbetaR,kbetaF) = he_betaR_betaF_mat;
-
-    he_inner_mat.block(kE,0,kbetaR,kE) = he_alpha_f_betaR_mat.transpose();
-    he_inner_mat.block(kE+kbetaR,0,kbetaF,kE) = he_alpha_f_betaF_mat.transpose();
-    he_inner_mat.block(kE+kbetaR,kE,kbetaF,kbetaR) = he_betaR_betaF_mat.transpose();
-
-  }
-
-
-  // functions for NegativeLogLikelihood
-  void NegativeLogLikelihood() {
-
-    Scalar loglik = 0;
-    for (int i = 0; i < n; i++) {
-      loglik += lanczos_lgamma(y(i) + theta) - lanczos_lgamma(theta) - lanczos_lgamma(y(i) + 1) -
-                                    theta * log(1 + mu(i)/theta) +
-                                    y(i)*( eta(i) + eta_remaining(i) + Xoffset(i) - log_theta - log(1 + mu(i)/theta) );
-    }
-    // part 1: DLNM
-    // Smooth Penalty
-    loglik += -0.5 * smoothing_w * alpha_w_C_pen.dot(Sw * alpha_w_C_pen) - 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f);
-    // Scale
-    loglik += (kw-1-1) / 2.0 * log_smoothing_w + (kE-1) / 2.0 * log_smoothing_f;
-
-    // part 2: Remaining smooth terms
-    int begin = 0;
-    for (int i = 0; i < p; i++) {
-      // Smooth Penalty
-      double ri = CppAD::Value(r(i));
-      int ki = static_cast<int>(ri);
-      Vec betaRi(ki);
-      for (int j = 0; j < ki; j++) betaRi(j) = betaR(begin + j);
-      loglik += -0.5 * smoothing(i) * betaRi.dot(betaRi); // smooth penalty
-      loglik += ki/2.0 * logsmoothing(i); // scale
-
-      begin += ki;
-    }
-
-    NegLogL = -1.0 * loglik; // NEGATIVE log-likelihood
-  }
-
-  // functions for NegativeLogLikelihood WITHOUT penalty for AIC
-  void NegativeLogLikelihood_l() {
-
-    Scalar loglik = 0;
-    for (int i = 0; i < n; i++) {
-      loglik += lanczos_lgamma(y(i) + theta) - lanczos_lgamma(theta) - lanczos_lgamma(y(i) + 1) -
-                                    theta * log(1 + mu(i)/theta) +
-                                    y(i)*( eta(i) + eta_remaining(i) + Xoffset(i) - log_theta - log(1 + mu(i)/theta) );
-    }
-
-    NegLogL_l = -1.0 * loglik; // NEGATIVE log-likelihood
-  }
-
-  void prepare_AIC () {
-    NegativeLogLikelihood_l();
-     // hessian of log likelihood without penalty
-    I_alpha_f_mat = I_alpha_f();
-    I_betaR_mat = I_betaR();
-    I_alpha_w_mat = I_alpha_w();
-    I_phi_mat = I_phi();
-    I_mat = he_s_u_mat;
-    I_mat.block(0, 0, kE, kE)  = I_alpha_f_mat;
-    I_mat.block(kE, kE, kw-1, kw-1) = I_phi_mat;
-    I_mat.block(kE+kw-1, kE+kw-1, kbetaR, kbetaR) = I_betaR_mat;
-  }
 
 
   // ********* Derivatives *************
@@ -886,50 +670,11 @@ public:
     }
     return out;
   }
-  // d log(exponential family density) / d theta
-  Scalar dlogdensity_dtheta () {
-    Scalar out = 0.0;
-    // std::cout << "x" << 3.5 << std::endl;
-    // std::cout << "lgamma1st" << CppAD::Value(lgamma1st(3.5)) << std::endl;
-
-    // TO DO: optimize it. Use property of gamma function...
-    for (int i = 0; i < n; i++) {
-      out += log_theta - log(theta + mu(i)) + (mu(i) - y(i))/(theta+mu(i)) + lgamma1st(theta+y(i)) - lgamma1st(theta);
-    }
-    return out;
-  }
-  // d^2 log(exponential family density) / d theta^2
-  // Scalar d2logdensity_dthetadtheta () {
-  //   Scalar out = 0.0;
-
-  //   for (int i = 0; i < n; i++) {
-  //     out += 1/theta - 1/(theta + mu(i)) - (mu(i) - y(i)) / ((theta + mu(i))*(theta + mu(i))) + lgamma2nd(y(i) + theta) - lgamma2nd(theta);
-  //   }
-  //   return out;
-  // }
-  Vec d2logdensity_dmudtheta () {
-    Vec out(n);
-    for (int i = 0; i < n; i++) {
-      out(i) = (y(i) - mu(i)) / pow(theta+mu(i), 2);
-    }
-    return out;
-  }
+ 
 
 
-
+  
   // 2. mean model
-  // d log(mu) / d alpha_f
-  Mat dlogmu_df () {
-    return Bf_matrix;
-  }
-  // d mu / d alpha_f
-  Mat dmu_df () {
-    Mat out(n, kE);
-    for (int i = 0; i < n; i++) {
-      out.row(i) = dlogmu_df_mat.row(i) * mu(i);
-    }
-    return out;
-  }
   // d log(mu) / d alpha_w
   Mat dlogmu_dw () {
     Mat out(n, kw);
@@ -948,89 +693,6 @@ public:
     }
     return out;
   }
-  // d log(mu) / d betaR
-  Mat dlogmu_dbetaR () {
-    return Xrand;
-  }
-  // d mu / d betaR
-  Mat dmu_dbetaR () {
-    Mat out(n, kbetaR);
-    for (int i = 0; i < n; i++) {
-      out.row(i) = dlogmu_dbetaR_mat.row(i) * mu(i);
-    }
-    return out;
-  }
-  // d log(mu) / d betaF
-  Mat dlogmu_dbetaF () {
-    return Xfix;
-  }
-  // d mu / d betaR
-  Mat dmu_dbetaF () {
-    Mat out(n, kbetaF);
-    for (int i = 0; i < n; i++) {
-      out.row(i) = dlogmu_dbetaF_mat.row(i) * mu(i);
-    }
-    return out;
-  }
-
-  // d^2 mu / d alpha_f^2
-  // std::vector<Mat> d2mu_dfdf () {
-  //   std::vector<Mat> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_df_mat.row(i));
-  //   }
-  //   return out;
-  // }
-  // d^2 mu / d betaR^2
-  // std::vector<Mat> d2mu_dbetaRdbetaR () {
-  //   std::vector<Mat> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_dbetaR_mat.row(i).transpose() * dlogmu_dbetaR_mat.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 mu / d betaF^2
-  // std::vector<Mat> d2mu_dbetaFdbetaF () {
-  //   std::vector<Mat> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_dbetaF_mat.row(i).transpose() * dlogmu_dbetaF_mat.row(i));
-  //   }
-  //   return out;
-  // }
-  // d^2 log(mu) / d alpha_w^2
-  // std::vector<Mat> d2logmu_dwdw () {
-  //   std::vector<Mat> out;
-  //   Vec Bf2nd;
-  //   for (int i = 0; i < n; i++) {
-  //     Bf2nd = BsplinevecCon2nd(E(i), knots_f, 4, Zf);
-  //     out.push_back((Bf2nd.dot(alpha_f)) * B_inner.row(i).transpose() * B_inner.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 mu / d alpha_w^2
-  // std::vector<Mat> d2mu_dwdw () {
-  //   std::vector<Mat> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_dw_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i) * d2logmu_dwdw_list.at(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 log(mu) / d alpha_f d alpha_w
-  // std::vector<Mat> d2logmu_dfdw () {
-  //   std::vector<Mat> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(BsplinevecCon1st(E(i), knots_f, 4, Zf) * B_inner.row(i));
-  //   }
-  //   return out;
-  // }
-  // d^2 mu / d alpha_f d alpha_w
-  // std::vector<Mat> d2mu_dfdw () {
-  //   std::vector<Mat> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i)*d2logmu_dfdw_list.at(i));
-  //   }
-  //   return out;
-  // }
 
 
 
@@ -1080,70 +742,6 @@ public:
     return out;
   }
 
-  // *** GRADIENT ***
-  Vec gr_alpha_f () {
-    Vec out = - dmu_df_mat.transpose() * dlogdensity_dmu_vec + smoothing_f * Sf * alpha_f;
-    return out;
-  }
-  Vec gr_betaR () {
-    Vec out = - dmu_dbetaR_mat.transpose() * dlogdensity_dmu_vec; // + smoothing * betaR;
-    int begin = 0;
-    for (int i = 0; i < p; i++) {
-      // Smooth Penalty
-      double ri = CppAD::Value(r(i));
-      int ki = static_cast<int>(ri);
-      // for (int j = 0; j < ki; j++) betaRi(j) = betaR(begin + j);
-      // out += smoothing(i) * betaRi;
-      for (int j = 0; j < ki; j++) out(begin + j) += smoothing(i) * betaR(begin + j);
-      begin += ki;
-    }
-    return out;
-  }
-  Vec gr_betaF () {
-    Vec out = - dmu_dbetaF_mat.transpose() * dlogdensity_dmu_vec;
-    return out;
-  }
-
-  Vec gr_alpha_w () {
-    Vec gr_pen_w = smoothing_w * Sw * alpha_w_C_pen;
-    Vec gr_pen_w_long(kw);
-    gr_pen_w_long(0) = 0.0;
-    for (int j = 0; j < (kw - 1); j++) {
-      gr_pen_w_long(j + 1) = gr_pen_w(j);
-    }
-
-    Vec out = - dmu_dw_mat.transpose() * dlogdensity_dmu_vec + gr_pen_w_long;
-    return out;
-  }
-  Vec gr_phi () {
-    Vec out = dw_dphi_mat.transpose() * gr_alpha_w_vec;
-    return out;
-  }
-  Scalar gr_log_smoothing_f () {
-    return 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f) - 0.5 * (kE-1);
-  }
-  Scalar gr_log_smoothing_w () {
-    return 0.5 * smoothing_w * alpha_w_C_pen.dot(Sw * alpha_w_C_pen) - 0.5 * (kw-1-1);
-  }
-  Scalar gr_log_theta () {
-    return -1.0 * theta * dlogdensity_dtheta_scalar;
-  }
-  Vec gr_logsmoothing () {
-    Vec out(p);
-    int begin = 0;
-    for (int i = 0; i < p; i++) {
-      // Smooth Penalty
-      double ri = CppAD::Value(r(i));
-      int ki = static_cast<int>(ri);
-      Vec betaRi(ki);
-      for (int j = 0; j < ki; j++) betaRi(j) = betaR(begin + j);
-      out(i) = 0.5 * smoothing(i) * betaRi.dot(betaRi) - 0.5*ki;
-      begin += ki;
-    }
-    return out;
-  }
-
-
   // *** Hessian ***
   Mat he_alpha_f () {
     Mat out1(kE, kE);
@@ -1151,23 +749,13 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_df_mat.row(i).transpose() * dmu_df_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_df_mat.row(i));
+      out1 += d2logdensity_dmudmu_vec(i) * (Bf_matrix.row(i)).transpose() * (Bf_matrix.row(i)) * mu(i) * mu(i);
+      out2 += dlogdensity_dmu_vec(i) * (mu(i) * Bf_matrix.row(i).transpose() * Bf_matrix.row(i));
     }
     return - out1 - out2 + smoothing_f*Sf;
   }
 
-  Mat I_alpha_f () { // hessian of negative likelihood without penalty 
-    Mat out1(kE, kE);
-    Mat out2(kE, kE);
-    out1.setZero();
-    out2.setZero();
-    for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_df_mat.row(i).transpose() * dmu_df_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_df_mat.row(i));
-    }
-    return - out1 - out2;
-  }
+
 
   Mat he_betaR () {
     Mat out1(kbetaR, kbetaR);
@@ -1177,8 +765,8 @@ public:
     out2.setZero();
     Ones.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_dbetaR_mat.row(i).transpose() * dmu_dbetaR_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_dbetaR_mat.row(i).transpose() * dlogmu_dbetaR_mat.row(i));
+      out1 += d2logdensity_dmudmu_vec(i) * (Xrand.row(i)).transpose() * (Xrand.row(i)) * mu(i) * mu(i);
+      out2 += dlogdensity_dmu_vec(i) * (mu(i) * Xrand.row(i).transpose() * Xrand.row(i));
     }
     int begin = 0;
     for (int i = 0; i < p; i++) {
@@ -1191,19 +779,6 @@ public:
     return - out1 - out2 + Ones;
   }
 
-  Mat I_betaR () {  // hessian of negative likelihood without penalty 
-    Mat out1(kbetaR, kbetaR);
-    Mat out2(kbetaR, kbetaR);
-    Mat Ones(kbetaR, kbetaR); // identity matrix with diagonal smoothing
-    out1.setZero();
-    out2.setZero();
-    Ones.setZero();
-    for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_dbetaR_mat.row(i).transpose() * dmu_dbetaR_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_dbetaR_mat.row(i).transpose() * dlogmu_dbetaR_mat.row(i));
-    }
-    return - out1 - out2;
-  }
 
   Mat he_betaF () {
     Mat out1(kbetaF, kbetaF);
@@ -1211,8 +786,8 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_dbetaF_mat.row(i).transpose() * dmu_dbetaF_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_dbetaF_mat.row(i).transpose() * dlogmu_dbetaF_mat.row(i));
+      out1 += d2logdensity_dmudmu_vec(i) * (Xfix.row(i)).transpose() * (Xfix.row(i)) * mu(i) * mu(i);
+      out2 += dlogdensity_dmu_vec(i) * (mu(i) * Xfix.row(i).transpose() * Xfix.row(i));
     }
     return - out1 - out2;
   }
@@ -1231,37 +806,26 @@ public:
     return - out1 - out2 + smoothing_w*Sw_large;
   }
 
-  Mat I_alpha_w () {  // hessian of negative likelihood without penalty 
-    Mat out1(kw, kw);
-    Mat out2(kw, kw);
-    out1.setZero();
-    out2.setZero();
-    for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * dmu_dw_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_dw_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i) * (BsplinevecCon2nd(E(i), knots_f, 4, Zf).dot(alpha_f)) * B_inner.row(i).transpose() * B_inner.row(i));
-    }
-    return - out1 - out2 ;
-  }
-
   Mat he_phi () {
     Mat out1 = dw_dphi_mat.transpose() * he_alpha_w_mat * dw_dphi_mat;
     Mat out2(kw-1, kw-1);
     out2.setZero();
+
+    Vec gr_pen_w = smoothing_w * Sw * alpha_w_C_pen;
+    Vec gr_pen_w_long(kw);
+    gr_pen_w_long(0) = 0.0;
+    for (int j = 0; j < (kw - 1); j++) {
+      gr_pen_w_long(j + 1) = gr_pen_w(j);
+    }
+
+    Vec gr_alpha_w_vec = - dmu_dw_mat.transpose() * dlogdensity_dmu_vec + gr_pen_w_long;
+
     for (int s = 0; s < kw; s++) {
       out2 = out2 + gr_alpha_w_vec(s) * d2w_dphidphi_list.at(s);
     }
     return out1 + out2;
   }
 
-  Mat I_phi () { // hessian of negative likelihood without penalty  
-    Mat out1 = dw_dphi_mat.transpose() * I_alpha_w_mat * dw_dphi_mat;
-    Mat out2(kw-1, kw-1);
-    out2.setZero();
-    for (int s = 0; s < kw; s++) {
-      out2 = out2 + gr_alpha_w_vec(s) * d2w_dphidphi_list.at(s);
-    }
-    return out1 + out2;
-  }
 
   Mat he_alpha_f_alpha_w () {
     Mat out1(kE, kw);
@@ -1269,8 +833,8 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_df_mat.row(i).transpose() * dmu_dw_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i)*BsplinevecCon1st(E(i), knots_f, 4, Zf) * B_inner.row(i));
+      out1 += d2logdensity_dmudmu_vec(i) * (Bf_matrix.row(i) * mu(i)).transpose() * dmu_dw_mat.row(i);
+      out2 += dlogdensity_dmu_vec(i) * (mu(i) * Bf_matrix.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i)*BsplinevecCon1st(E(i), knots_f, 4, Zf) * B_inner.row(i));
     }
     return - out1 - out2;
   }
@@ -1285,8 +849,8 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_df_mat.row(i).transpose() * dmu_dbetaF_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * dlogmu_df_mat.row(i).transpose() * dmu_dbetaF_mat.row(i);
+      out1 += d2logdensity_dmudmu_vec(i) * (Bf_matrix.row(i)).transpose() * (Xfix.row(i)) * mu(i) * mu(i);
+      out2 += dlogdensity_dmu_vec(i) * Bf_matrix.row(i).transpose() * (Xfix.row(i) * mu(i));
     }
     return - out1 - out2;
   }
@@ -1296,8 +860,8 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_df_mat.row(i).transpose() * dmu_dbetaR_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * dlogmu_df_mat.row(i).transpose() * dmu_dbetaR_mat.row(i);
+      out1 += d2logdensity_dmudmu_vec(i) * (Bf_matrix.row(i)).transpose() * (Xrand.row(i)) * mu(i) * mu(i);
+      out2 += dlogdensity_dmu_vec(i) * Bf_matrix.row(i).transpose() * (Xrand.row(i) * mu(i));
     }
     return - out1 - out2;
   }
@@ -1307,8 +871,8 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += dw_dphi_mat.transpose() * (d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * dmu_dbetaR_mat.row(i));
-      out2 += dw_dphi_mat.transpose() * (dlogdensity_dmu_vec(i) * dlogmu_dw_mat.row(i).transpose() * dmu_dbetaR_mat.row(i));
+      out1 += dw_dphi_mat.transpose() * (d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * (Xrand.row(i) * mu(i)));
+      out2 += dw_dphi_mat.transpose() * (dlogdensity_dmu_vec(i) * dlogmu_dw_mat.row(i).transpose() * (Xrand.row(i) * mu(i)));
     }
     return - out1 - out2;
   }
@@ -1318,8 +882,8 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += dw_dphi_mat.transpose() * (d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * dmu_dbetaF_mat.row(i));
-      out2 += dw_dphi_mat.transpose() * (dlogdensity_dmu_vec(i) * dlogmu_dw_mat.row(i).transpose() * dmu_dbetaF_mat.row(i));
+      out1 += dw_dphi_mat.transpose() * (d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * (Xfix.row(i) * mu(i)));
+      out2 += dw_dphi_mat.transpose() * (dlogdensity_dmu_vec(i) * dlogmu_dw_mat.row(i).transpose() * (Xfix.row(i) * mu(i)));
     }
     return - out1 - out2;
   }
@@ -1329,64 +893,10 @@ public:
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
-      out1 += d2logdensity_dmudmu_vec(i) * dmu_dbetaR_mat.row(i).transpose() * dmu_dbetaF_mat.row(i);
-      out2 += dlogdensity_dmu_vec(i) * dlogmu_dbetaR_mat.row(i).transpose() * dmu_dbetaF_mat.row(i);
+      out1 += d2logdensity_dmudmu_vec(i) * (Xrand.row(i)).transpose() * (Xfix.row(i)) * mu(i) * mu(i);
+      out2 += dlogdensity_dmu_vec(i) * Xrand.row(i).transpose() * (Xfix.row(i) * mu(i));
     }
     return - out1 - out2;
-  }
-
-  // Scalar he_log_smoothing_f () {
-  //   return 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f);
-  // }
-  // Scalar he_log_smoothing_w () {
-  //   return 0.5 * smoothing_w * alpha_w_C_pen.dot(Sw * alpha_w_C_pen);
-  // }
-  // Scalar he_log_theta () {
-  //   return -1.0*theta*theta * d2logdensity_dthetadtheta_scalar - theta * dlogdensity_dtheta_scalar;
-  // }
-
-  Vec he_alpha_f_log_smoothing_f () {
-    return smoothing_f * Sf * alpha_f;
-  }
-  Vec he_phi_log_smoothing_w () {
-
-    Vec he_alpha_w_C_pen_log_smoothing_w = smoothing_w * Sw * alpha_w_C_pen;
-
-    Vec he_alpha_w_log_smoothing_w(kw);
-    he_alpha_w_log_smoothing_w(0) = 0.0;
-    for (int i = 1; i < kw; i++)
-    {
-      he_alpha_w_log_smoothing_w(i) = he_alpha_w_C_pen_log_smoothing_w(i-1);
-    }
-
-    return dw_dphi_mat.transpose() * he_alpha_w_log_smoothing_w;
-  }
-
-  Mat he_betaR_logsmoothing () {
-    Mat out(kbetaR, p);
-    out.setZero();
-    int begin = 0;
-    for (int i = 0; i < p; i++) {
-      double ri = CppAD::Value(r(i));
-      int ki = static_cast<int>(ri);
-      for (int j = 0; j < ki; j++) out(begin + j, i) = smoothing(i) * betaR(begin + j);
-      begin += ki;
-    }
-    return out;
-  }
-  Vec he_alpha_f_log_theta () {
-    // he_alpha_f_theta = dmu_df_mat.transpose() * d2logdensity_dmudtheta_vec;
-    return -1.0*dmu_df_mat.transpose() * d2logdensity_dmudtheta_vec * theta;
-  }
-  Vec he_phi_log_theta () {
-    // he_alpha_w_theta = dmu_dw_mat.transpose() * d2logdensity_dmudtheta_vec;
-    return -1.0*theta * dw_dphi_mat.transpose() * ( dmu_dw_mat.transpose() * d2logdensity_dmudtheta_vec );
-  }
-  Vec he_betaR_log_theta () {
-    return -1.0*dmu_dbetaR_mat.transpose() * d2logdensity_dmudtheta_vec * theta;
-  }
-  Vec he_betaF_log_theta () {
-    return -1.0*dmu_dbetaF_mat.transpose() * d2logdensity_dmudtheta_vec * theta;
   }
 
 
@@ -1400,7 +910,7 @@ public:
     Mat LU = lu.matrixLU();
     // Scalar c = lu.permutationP().determinant(); // -1 or 1
     Scalar lii;
-    for (int i = 0; i < LU.rows(); i++) {
+    for (int i = 0; i < (kw+kE-1+kbetaR+kbetaF); i++) {
       lii = LU(i,i);
       // std::cout << "lii : " << CppAD::Value(lii) << std::endl;
       // std::cout << "c : " << CppAD::Value(c) << std::endl;

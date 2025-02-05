@@ -14,11 +14,6 @@ using namespace Rcpp;
 // TODO: use https://github.com/yixuan/LBFGSpp
 
 
-double LAML_fn(Model& modelobj) {
-    double out;
-    out = modelobj.logdetH05() +  modelobj.NegLogL - modelobj.n/2.0 * log(2*3.141592653589793238462643383279);
-    return out;
-}
 
 struct LAMLResult {
     double fn;
@@ -26,7 +21,7 @@ struct LAMLResult {
 };
 
 
-void LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
+CppAD::ADFun<double> LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
     // if(!modelcppadobj.ifhastape) {
       int kE = modelobj.kE;
       int kw = modelobj.kw;
@@ -55,14 +50,16 @@ void LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
       Vec logsmoothing = R_logsmoothing.cast<Scalar>();
 
       // alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing
-      // Setup the AD
+
+      
       Vec at(kE+kbetaR+kbetaF + kw-1 + 3 + p);
       at << alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing;
 
+
+      // start reverse mode
       Vec result(1);
       CppAD::ADFun<double> gr;
 
-      
       CppAD::Independent(at);
       modelcppadobj.setAlphaF(at.segment(0, kE));
       modelcppadobj.setPhi(at.segment(kE, kw-1));
@@ -77,14 +74,64 @@ void LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
       modelcppadobj.derivative_coef();
       modelcppadobj.derivative_he();
       result(0) = modelcppadobj.logdetH05();
-      // reverse mode
+      
       gr.Dependent(at, result);
-      modelcppadobj.gr = gr;
+      // gr.optimize();
+      // modelcppadobj.gr = gr;
+      return gr;
+      // END reverse 
+
+
+
+      // Forward mode 1
+      // std::vector<Scalar> at_std(at.data(), at.data() + (kE+kbetaR+kbetaF + kw-1 + 3 + p));
+     
+      // CppAD::Independent(at_std);
+
+      // std::vector<Scalar> result(1);
+      // Vec at_eigen = Eigen::Map<Vec>(at_std.data(), (kE+kbetaR+kbetaF + kw-1 + 3 + p));
+      // modelcppadobj.setAlphaF(at_eigen.segment(0, kE));
+      // modelcppadobj.setPhi(at_eigen.segment(kE, kw-1));
+      // modelcppadobj.setBetaR(at_eigen.segment(kE+kw-1, kbetaR));
+      // modelcppadobj.setBetaF(at_eigen.segment(kE+kw-1+kbetaR, kbetaF));
+      // modelcppadobj.setLogTheta(at_eigen(kE+kbetaR+kbetaF+kw-1));
+      // modelcppadobj.setLogSmoothingF(at_eigen(kE+kbetaR+kbetaF+kw-1+1));
+      // modelcppadobj.setLogSmoothingW(at_eigen(kE+kbetaR+kbetaF+kw-1+2));
+      // modelcppadobj.setLogsmoothing(at_eigen.segment(kE+kbetaR+kbetaF+kw-1+3, p));
+    
+      // modelcppadobj.derivative_coef();
+      // modelcppadobj.derivative_he();
+      // result[0] = modelcppadobj.logdetH05();
+
+      // CppAD::ADFun<double> gr(at_std, result);
+      // END forward 1
+
+
+      // Forward mode 2
+      // CppAD::Independent(at);
+
+      // Vec result(1);
+      // modelcppadobj.setAlphaF(at.segment(0, kE));
+      // modelcppadobj.setPhi(at.segment(kE, kw-1));
+      // modelcppadobj.setBetaR(at.segment(kE+kw-1, kbetaR));
+      // modelcppadobj.setBetaF(at.segment(kE+kw-1+kbetaR, kbetaF));
+      // modelcppadobj.setLogTheta(at(kE+kbetaR+kbetaF+kw-1));
+      // modelcppadobj.setLogSmoothingF(at(kE+kbetaR+kbetaF+kw-1+1));
+      // modelcppadobj.setLogSmoothingW(at(kE+kbetaR+kbetaF+kw-1+2));
+      // modelcppadobj.setLogsmoothing(at.segment(kE+kbetaR+kbetaF+kw-1+3, p));
+      
+
+      // modelcppadobj.derivative_coef();
+      // modelcppadobj.derivative_he();
+      // result(0) = modelcppadobj.logdetH05();
+
+      // CppAD::ADFun<double> gr(at, result);
+      // END forward 2
+
+
       // modelcppadobj.ifhastape = true;
    
-      // Define function for forward mode
-      // CppAD::ADFun<double> gr(at, result);
-      // modelcppadobj.gr = gr;
+      
 
 
       
@@ -121,23 +168,39 @@ LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
     Eigen::VectorXd logsmoothing = modelobj.logsmoothing;
 
     // First derivative of LAML
-    Eigen::VectorXd g_LAML(kE+kw+2 + kbetaR+kbetaF + p);
-    g_LAML.setZero();
+    
+    CppAD::ADFun<double> cppadgr = LAMLTape(modelobj, modelcppadobj);
 
-    LAMLTape(modelobj, modelcppadobj);
+
 
     Eigen::VectorXd at0(kE+kbetaR+kbetaF + kw-1 + 3 + p);
     at0 << alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing;
     
     // reverse mode
-    g_LAML = modelcppadobj.gr.Jacobian(at0);
+    Eigen::VectorXd g_LAML(kE+kw+2 + kbetaR+kbetaF + p);
+    g_LAML.setZero();
+    g_LAML = cppadgr.Jacobian(at0);
+    // END reverse mode
 
-    // forward mode
-    // g_LAML = modelcppadobj.gr.Forward(1, at0);
+
+    // forward mode 1, 2
+    // std::vector<Scalar> at0_std(at0.data(), at0.data() + (kE+kbetaR+kbetaF + kw-1 + 3 + p));
+    // std::vector<double> dx((kE+kbetaR+kbetaF + kw-1 + 3 + p), 0.0);
+    // std::vector<double> g_LAML_std((kE+kbetaR+kbetaF + kw-1 + 3 + p));
+    //  std::vector<double> dy(1);
+    // for (size_t i = 0; i < (kE+kbetaR+kbetaF + kw-1 + 3 + p); ++i) {
+    //     dx[i] = 1.0;  
+    //     dy = modelcppadobj.gr.Forward(1, dx);
+    //     g_LAML_std[i] = dy[0];  
+    //     dx[i] = 0.0; 
+    // }
     
-    // g_LAML = gradient(logdetH05, wrt(alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing),
-    //                              at(alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing, modelobj),
-    //                              u_LAML);
+    // Eigen::VectorXd g_LAML = Eigen::Map<Eigen::VectorXd>(g_LAML_std.data(), g_LAML_std.size());
+    // END forward mode 1, 2
+
+
+
+
     u_LAML = modelobj.logdetH05() + modelobj.NegLogL - modelobj.n/2.0 * log(2*3.141592653589793238462643383279);
 
 
