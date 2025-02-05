@@ -666,105 +666,49 @@ aceDLNM <- function(formula,
   address.list <- build(par.fn)
   mod.address <- address.list$address.eigen
   ad.address <- address.list$address.cppad
-  success <- FALSE
-  itrtry <- 0
-  while((!success) & (itrtry < 4)) {
-    itrtry <- itrtry + 1
-    tryCatch(
-      expr = {
-        opt.LAML <- optim(par.start[!par.fix.id],
-                        fn = function(par.){
-                                            par.fn <- par.fix
-                                            par.fn[!par.fix.id] <- par.
-                                            return(LAML.fn(par.fn))
-                                            }, # objective function
-                        gr = function(par.){
-                                            par.fn <- par.fix
-                                            par.fn[!par.fix.id] <- par.
-                                            return(LAML.gr(par.fn)[!par.fix.id])
-                                            }, # gradient function
-                        method = "L-BFGS-B",
-                        lower = lower.bound[!par.fix.id],
-                        upper = upper.bound[!par.fix.id],
-                        control = list(trace = verbose),
-                        hessian = hessian
-                        )
+  
+  opt.LAML <- optim(par.start[!par.fix.id],
+                  fn = function(par.){
+                                      par.fn <- par.fix
+                                      par.fn[!par.fix.id] <- par.
+                                      return(LAML.fn(par.fn))
+                                      }, # objective function
+                  gr = function(par.){
+                                      par.fn <- par.fix
+                                      par.fn[!par.fix.id] <- par.
+                                      return(LAML.gr(par.fn)[!par.fix.id])
+                                      }, # gradient function
+                  method = "L-BFGS-B",
+                  lower = lower.bound[!par.fix.id],
+                  upper = upper.bound[!par.fix.id],
+                  control = list(trace = verbose),
+                  hessian = hessian
+                  )
 
-        if(all(opt.LAML$par == par.start[!par.fix.id])){
-          ## get stuck in the starting values
-          par.start[!par.fix.id] <- par.start[!par.fix.id]/2
-          opt.LAML <- optim(par.start[!par.fix.id],
-                            fn = function(par.){
-                                                par.fn <- par.fix
-                                                par.fn[!par.fix.id] <- par.
-                                                return(LAML.fn(par.fn))
-                                                }, # objective function
-                            gr = function(par.){
-                                                par.fn <- par.fix
-                                                par.fn[!par.fix.id] <- par.
-                                                return(LAML.gr(par.fn)[!par.fix.id])
-                                                }, # gradient function
-                            method = "L-BFGS-B",
-                            lower = lower.bound[!par.fix.id],
-                            upper = upper.bound[!par.fix.id],
-                            control = list(trace = verbose),
-                            hessian = hessian)
-        }
-        success <- TRUE
-      },
-      error = function(e) {
-        cat("resetting starting values... \n")
-      }
-    )
-    if((!success)) {
-      ## reset starting values for log_theta and log_smoothing_w
-      if(!par.fix.id[1]) par.start[1] <- c(0,0,3,3)[itrtry]
-      if(!par.fix.id[3]) par.start[3] <- c(8,2,10,2)[itrtry]
-      if(par.fix.id[1] & par.fix.id[3]) stop("Error. Please try other par.start or par.fix")
-      LAMLenv <- list(par = NULL,
-                      fn = NULL,
-                      gr = NULL,
-                      mod = list(phi.mod = phi.init.default, alpha_f.mod = alpha_f.init.default,
-                                  betaF.mod = betaF.init.default))
-    }
+  if(all(opt.LAML$par == par.start[!par.fix.id])){
+    ## get stuck in the starting values
+    par.start[!par.fix.id] <- par.start[!par.fix.id]/2
+    opt.LAML <- optim(par.start[!par.fix.id],
+                      fn = function(par.){
+                                          par.fn <- par.fix
+                                          par.fn[!par.fix.id] <- par.
+                                          return(LAML.fn(par.fn))
+                                          }, # objective function
+                      gr = function(par.){
+                                          par.fn <- par.fix
+                                          par.fn[!par.fix.id] <- par.
+                                          return(LAML.gr(par.fn)[!par.fix.id])
+                                          }, # gradient function
+                      method = "L-BFGS-B",
+                      lower = lower.bound[!par.fix.id],
+                      upper = upper.bound[!par.fix.id],
+                      control = list(trace = verbose),
+                      hessian = hessian)
   }
-  if(GD) {
-    # do gradient descent step for gradient of f and w
-    GDitermax <- 2
-    GDiter <- 0
-    while((max(abs(LAMLenv$gr[2:3])) > GD.grtol) & (GDiter < GDitermax)) {
-      GDiter <- GDiter + 1
-      if(verbose) cat("Gradient descent step. Attempt ", GDiter, "/", GDitermax, " \n")
-      par.restart <- LAMLenv$par
-      GDstep <- 1*LAMLenv$gr[2:3]
-      par.restart[2:3] <- par.restart[2:3] - GDstep # update f and w
-      for (i in 2:3) {
-        # satisfy box constraint
-        if((par.restart[i] >= upper.bound[i]-1)) par.restart[i] = upper.bound[i]-1
-        # reset par if the step size is too large
-        if((par.restart[i] <= max(3,lower.bound[i]+1))) par.restart[i] = max(3,lower.bound[i]+1)
-      }
-      opt.LAML <- optim(par.restart[!par.fix.id],
-                        fn = function(par.){
-                          par.fn <- par.fix
-                          par.fn[!par.fix.id] <- par.
-                          return(LAML.fn(par.fn))
-                        }, # objective function
-                        gr = function(par.){
-                          par.fn <- par.fix
-                          par.fn[!par.fix.id] <- par.
-                          return(LAML.gr(par.fn)[!par.fix.id])
-                        }, # gradient function
-                        method = "L-BFGS-B",
-                        lower = lower.bound[!par.fix.id],
-                        upper = upper.bound[!par.fix.id],
-                        control = list(trace = verbose),
-                        hessian = hessian)
-    }
-  }
-  if(max(abs(LAMLenv$gr[2:3])) > GD.grtol) if(verbose) cat("the gradient of LAML is large.\n")
-  if((!success) & itrtry >= 4) stop("Error. Please try other par.start")
 
+  
+  
+  
   ## reset starting value once if log-lambda reaches the boundary.
   # retrybound <- FALSE
   # if((!par.fix.id[2]) & ((opt.LAML$par[2] >= upper.bound[2]-0.1) & LAML.gr(opt.LAML$par)[2] < -1e-2)) {

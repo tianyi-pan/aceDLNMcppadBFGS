@@ -27,7 +27,7 @@ struct LAMLResult {
 
 
 void LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
-    if(!modelcppadobj.ifhastape) {
+    // if(!modelcppadobj.ifhastape) {
       int kE = modelobj.kE;
       int kw = modelobj.kw;
       int kbetaR = modelobj.kbetaR;
@@ -62,7 +62,7 @@ void LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
       Vec result(1);
       CppAD::ADFun<double> gr;
 
-      // Start the tape
+      
       CppAD::Independent(at);
       modelcppadobj.setAlphaF(at.segment(0, kE));
       modelcppadobj.setPhi(at.segment(kE, kw-1));
@@ -77,11 +77,18 @@ void LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
       modelcppadobj.derivative_coef();
       modelcppadobj.derivative_he();
       result(0) = modelcppadobj.logdetH05();
+      // reverse mode
       gr.Dependent(at, result);
-      // Stop the tape
       modelcppadobj.gr = gr;
-      modelcppadobj.ifhastape = true;
-    }    
+      // modelcppadobj.ifhastape = true;
+   
+      // Define function for forward mode
+      // CppAD::ADFun<double> gr(at, result);
+      // modelcppadobj.gr = gr;
+
+
+      
+    // }    
 }
 
 LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
@@ -121,8 +128,12 @@ LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
 
     Eigen::VectorXd at0(kE+kbetaR+kbetaF + kw-1 + 3 + p);
     at0 << alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing;
-
+    
+    // reverse mode
     g_LAML = modelcppadobj.gr.Jacobian(at0);
+
+    // forward mode
+    // g_LAML = modelcppadobj.gr.Forward(1, at0);
     
     // g_LAML = gradient(logdetH05, wrt(alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing),
     //                              at(alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing, modelobj),
@@ -261,8 +272,12 @@ List aceDLNMopt(SEXP ptr,
     Inner(modelobj, verbose);
     // get gr of LAML
     LAMLResult LAMLresult;
-    LAMLresult = LAML(modelobj, modelcppadobj); // true: fn and gr
-
+    LAMLresult = LAML(modelobj, modelcppadobj); 
+    // if(hasNaN(LAMLresult.gradient)) {
+    //   // rebuild the tape
+    //   modelcppadobj.ifhastape = false;
+    //   LAMLresult = LAML(modelobj, modelcppadobj);
+    // }
     return List::create(Named("LAML.fn") = LAMLresult.fn,
                         Named("LAML.gradient") = LAMLresult.gradient,
                         Named("alpha_f.mod") = modelobj.alpha_f,
