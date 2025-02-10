@@ -71,6 +71,7 @@ aceDLNM <- function(formula,
                     interpolate = TRUE,
                     kx.per500 = 300,
                     E.min,
+                    conL = FALSE,
                     pc = NULL,
                     par.start, par.fix, upper.bound,
                     CI = 0.95,
@@ -166,20 +167,58 @@ aceDLNM <- function(formula,
   SwCon <- SSwCon$S[[1]]
 
 
+
+
+
   ## absorb SwCon
   EEw <- eigen(SwCon)
   pw <- ncol(EEw$vectors)
   rw <- sum(EEw$values > .Machine$double.eps)
   mw <- pw - rw
   URw <- EEw$vectors[,1:rw]
-  UFw <- EEw$vectors[,rw + (1:mw)]
-  if (!is.matrix(UFw)) UFf <- cbind(UFw) # ensure UFw in a matrix
+
   Dpw <- as.matrix(Matrix::Diagonal(rw,1 / sqrt(Reduce(c,lapply(EEw$values,function(x) x[x>.Machine$double.eps])))))
 
-  Uwpen <- as.matrix(cbind(URw %*% Dpw, UFw))
+  if(mw == 0) {
+    Uwpen <- as.matrix(URw %*% Dpw)
+  } else {
+    UFw <- EEw$vectors[,rw + (1:mw)]
+    if (!is.matrix(UFw)) UFf <- cbind(UFw) # ensure UFw in a matrix
+    Uwpen <- as.matrix(cbind(URw %*% Dpw, UFw))
+  }
+
   SwI <- diag(1, nrow = pw, ncol = pw) # identity matrix
-  SwI[rw + (1:mw), rw + (1:mw)] <- 0 # new penalty matrix
+  if(mw > 0) SwI[rw + (1:mw), rw + (1:mw)] <- 0 # new penalty matrix
+
   Zwnew <- Zw %*% Uwpen
+
+  if(conL) {
+    cL <- c(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew)
+    K <- matrix(0, nrow = kw-1, ncol = kw-2)
+    a <- rep(0, kw-1)
+    K[1:(kw-2), 1:(kw-2)] <- diag(1, nrow = kw-2, ncol = kw-2)
+    K[kw-1,] <- -cL[1:(kw-2)]/cL[kw-1]
+    a[kw-1] <- -1/cL[kw-1]
+    # phi <- K %*% phim + a
+  } else {
+    K <- diag(1, nrow = kw-1, ncol = kw-1)
+    a <- rep(0, kw-1)
+  }
+  # phim <- rep(1,kw-2)
+  # phi <- K %*% phim + a
+  # cL %*% phi == -1
+
+  # mgcv::PredictMat(SSw, data = data.frame(l = 15)) %*% Zw
+  # if(conL){
+  #   QRw0 <- qr(t(cbind(1,mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew)))
+  #   Qw0 <- qr.Q(QRw0, complete = TRUE)
+  #   Zw0 <- Qw0[,2:ncol(Qw0)]
+  #   SwI_large <- t(Zw0) %*% cbind(0, rbind(0, SwI)) %*% Zw0
+  # }else{
+  SwI_large <- cbind(0, rbind(0, SwI))
+  # }
+
+
   # f(E) = Bf_matrix * Ufpen * alpha_f_repa
   # DRf <- as.matrix(Matrix::Diagonal(rf,sqrt(Reduce(c,lapply(EEf$values,function(x) x[x>.Machine$double.eps])))))
   # Ufpen %*% rbind(t(URf %*% DRf), t(UFf)) = identity matrix
@@ -290,7 +329,9 @@ aceDLNM <- function(formula,
 
   B_inner <- do.call("rbind", lapply(DLprepare, "[[", "B_inner"))
 
+
   Dw <- DLprepare[[1]]$Dw
+
   E.max <- do.call("max", lapply(DLprepare, "[[", "E.max"))
   if(missingArg(E.min)) E.min <- do.call("min", lapply(DLprepare, "[[", "E.min"))
   removed.t <- lapply(DLprepare, "[[", "removed.t")
@@ -471,7 +512,11 @@ aceDLNM <- function(formula,
 
 
   ## set starting values
-  phi.init.default  <- rep(0,kw-1)
+  if(conL) {
+    phi.init.default  <- rep(1,kw-2) # additional constraint: w(L) = 0
+  } else {
+    phi.init.default  <- rep(1,kw-1)
+  }
 
   alpha_f.init.default <- rep(0,kE-1)
 
@@ -569,8 +614,9 @@ aceDLNM <- function(formula,
     if(model.choice == "with.smooth"){
       betaR.init <- LAMLenv$mod$betaR.mod
       if(any(is.nan(betaF.init))) betaR.init <- betaR.init.default
-      mod.build <- aceDLNMbuild(y, B_inner, SSf$knots, SwI, SfI, Dw,
+      mod.build <- aceDLNMbuild(y, B_inner, SSf$knots, SwI_large, SfI, Dw,
                                 Xrand, Xfix, Zfnew, Xoffset, r,
+                                K,a,
                                 alpha_f.init,
                                 phi.init,
                                 log_theta.given, log_smoothing_f.given, log_smoothing_w.given,
@@ -666,7 +712,7 @@ aceDLNM <- function(formula,
   address.list <- build(par.fn)
   mod.address <- address.list$address.eigen
   ad.address <- address.list$address.cppad
-  
+
   opt.LAML <- optim(par.start[!par.fix.id],
                   fn = function(par.){
                                       par.fn <- par.fix
@@ -706,9 +752,9 @@ aceDLNM <- function(formula,
                       hessian = hessian)
   }
 
-  
-  
-  
+
+
+
   ## reset starting value once if log-lambda reaches the boundary.
   # retrybound <- FALSE
   # if((!par.fix.id[2]) & ((opt.LAML$par[2] >= upper.bound[2]-0.1) & LAML.gr(opt.LAML$par)[2] < -1e-2)) {
@@ -756,7 +802,8 @@ aceDLNM <- function(formula,
   log_smoothing_w.opt <- LAMLenv$par[3]
   alpha_f.opt <- LAMLenv$mod$alpha_f.mod
   phi.opt <- LAMLenv$mod$phi.mod
-  phi_long <- as.vector(c(1, phi.opt))
+  phiKa.opt <- K %*% phi.opt + a
+  phi_long <- as.vector(c(1, phiKa.opt))
   alpha_w.opt <- phi_long / as.numeric(sqrt(t(phi_long) %*% Dw %*% phi_long))
   betaF.opt <- LAMLenv$mod$betaF.mod
 
@@ -770,7 +817,7 @@ aceDLNM <- function(formula,
                           alpha_w = alpha_w.opt,
                           phi = phi.opt,
                           betaF = betaF.opt),
-             smooth = list(wl = SSwCon, fE = NULL))
+             smooth = list(wl = SSw, fE = NULL))
   if(is.null(pc)) {
     out$smooth$fE <- SSfCon
   } else {
@@ -792,8 +839,9 @@ aceDLNM <- function(formula,
     start <- Sys.time()
   }
   if(model.choice == "with.smooth") {
-    sampled <- aceDLNMCI(y, B_inner, SSf$knots, SwI, SfI, Dw,
+    sampled <- aceDLNMCI(y, B_inner, SSf$knots, SwI_large, SfI, Dw,
                          Xrand, Xfix, Zfnew, Xoffset, r,
+                         K,a,
                             LAMLenv$mod$alpha_f.mod,
                             phi.opt,
                             log_theta.opt, log_smoothing_f.opt, log_smoothing_w.opt,
@@ -836,6 +884,8 @@ aceDLNM <- function(formula,
   ## return formula
   out$formula <- formula.list
 
+  ## constraint: w(L) = 0
+  out$conL <- conL
   ## return data
   out$data <- list(maxL = maxL,
                    B_inner = B_inner,
@@ -849,6 +899,11 @@ aceDLNM <- function(formula,
                    t = t,
                    pc = pc # point constraint
                    )
+  out$data$SwI_large = SwI_large
+  out$data$SwI = SwI
+  out$data$SfI = SfI
+  out$data$K = K
+  out$data$a = a
   out$data$Xfix = Xfix
   out$data$knots_f = SSf$knots
   out$data$knots_w = knots_w

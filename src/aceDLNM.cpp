@@ -25,6 +25,7 @@ CppAD::ADFun<double> LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
     // if(!modelcppadobj.ifhastape) {
       int kE = modelobj.kE;
       int kw = modelobj.kw;
+      int kwopt = modelobj.kwopt;
       int kbetaR = modelobj.kbetaR;
       int kbetaF = modelobj.kbetaF;
       int p = modelobj.p;
@@ -52,7 +53,7 @@ CppAD::ADFun<double> LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
       // alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing
 
       
-      Vec at(kE+kbetaR+kbetaF + kw-1 + 3 + p);
+      Vec at(kE+kbetaR+kbetaF + kwopt + 3 + p);
       at << alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing;
 
 
@@ -62,13 +63,13 @@ CppAD::ADFun<double> LAMLTape(Model& modelobj, Modelcppad& modelcppadobj){
 
       CppAD::Independent(at);
       modelcppadobj.setAlphaF(at.segment(0, kE));
-      modelcppadobj.setPhi(at.segment(kE, kw-1));
-      modelcppadobj.setBetaR(at.segment(kE+kw-1, kbetaR));
-      modelcppadobj.setBetaF(at.segment(kE+kw-1+kbetaR, kbetaF));
-      modelcppadobj.setLogTheta(at(kE+kbetaR+kbetaF+kw-1));
-      modelcppadobj.setLogSmoothingF(at(kE+kbetaR+kbetaF+kw-1+1));
-      modelcppadobj.setLogSmoothingW(at(kE+kbetaR+kbetaF+kw-1+2));
-      modelcppadobj.setLogsmoothing(at.segment(kE+kbetaR+kbetaF+kw-1+3, p));
+      modelcppadobj.setPhi(at.segment(kE, kwopt));
+      modelcppadobj.setBetaR(at.segment(kE+kwopt, kbetaR));
+      modelcppadobj.setBetaF(at.segment(kE+kwopt+kbetaR, kbetaF));
+      modelcppadobj.setLogTheta(at(kE+kbetaR+kbetaF+kwopt));
+      modelcppadobj.setLogSmoothingF(at(kE+kbetaR+kbetaF+kwopt+1));
+      modelcppadobj.setLogSmoothingW(at(kE+kbetaR+kbetaF+kwopt+2));
+      modelcppadobj.setLogsmoothing(at.segment(kE+kbetaR+kbetaF+kwopt+3, p));
       
 
       modelcppadobj.derivative_coef();
@@ -143,6 +144,7 @@ LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
     double u_LAML;
     int kE = modelobj.kE;
     int kw = modelobj.kw;
+    int kwopt = modelobj.kwopt;
     int kbetaR = modelobj.kbetaR;
     int kbetaF = modelobj.kbetaF;
     int p = modelobj.p;
@@ -173,11 +175,11 @@ LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
 
 
 
-    Eigen::VectorXd at0(kE+kbetaR+kbetaF + kw-1 + 3 + p);
+    Eigen::VectorXd at0(kE+kbetaR+kbetaF + kwopt + 3 + p);
     at0 << alpha_f, phi, betaR, betaF, log_theta, log_smoothing_f, log_smoothing_w, logsmoothing;
     
     // reverse mode
-    Eigen::VectorXd g_LAML(kE+kw+2 + kbetaR+kbetaF + p);
+    Eigen::VectorXd g_LAML(kE + kwopt + 3 + kbetaR+kbetaF + p);
     g_LAML.setZero();
     g_LAML = cppadgr.Jacobian(at0);
     // END reverse mode
@@ -205,8 +207,8 @@ LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
 
 
     // In R: grad[-(1:(kE+kw-1))] - H.full[-(1:(kE+kw-1)),(1:(kE+kw-1))] %*% as.vector(solve(H.alpha, grad[(1:(kE+kw-1))]))
-    Eigen::VectorXd g1 = g_LAML.segment(0, kE+kw-1+kbetaR+kbetaF) + gr_s_u_vec;
-    Eigen::VectorXd g2 = g_LAML.segment(kE+kw-1+kbetaR+kbetaF, 3+p) + gr_s_par_vec;
+    Eigen::VectorXd g1 = g_LAML.segment(0, kE+kwopt+kbetaR+kbetaF) + gr_s_u_vec;
+    Eigen::VectorXd g2 = g_LAML.segment(kE+kwopt+kbetaR+kbetaF, 3+p) + gr_s_par_vec;
     Eigen::VectorXd gr = g2 - he_s_par_u_mat * he_s_u_mat.ldlt().solve(g1);
 
     result.fn = u_LAML;
@@ -221,7 +223,7 @@ LAMLResult LAML(Model& modelobj, Modelcppad& modelcppadobj) {
 List aceDLNMbuild(const Eigen::VectorXd R_y,
                    const Eigen::MatrixXd R_B_inner,
                    const Eigen::VectorXd R_knots_f,
-                   const Eigen::MatrixXd R_Sw,
+                   const Eigen::MatrixXd R_Sw_large,
                    const Eigen::MatrixXd R_Sf,
                    const Eigen::MatrixXd R_Dw,
                    const Eigen::MatrixXd R_Xrand,
@@ -229,6 +231,8 @@ List aceDLNMbuild(const Eigen::VectorXd R_y,
                    const Eigen::MatrixXd R_Zf,
                    const Eigen::VectorXd R_Xoffset,
                    const Eigen::VectorXd R_r,
+                   const Eigen::MatrixXd R_K,
+                   const Eigen::VectorXd R_a,
                    Eigen::VectorXd R_alpha_f,
                    Eigen::VectorXd R_phi,
                    double R_log_theta,
@@ -241,7 +245,7 @@ List aceDLNMbuild(const Eigen::VectorXd R_y,
     Vec y = R_y.cast<Scalar>();
     Mat B_inner = R_B_inner.cast<Scalar>();
     Vec knots_f = R_knots_f.cast<Scalar>();
-    Mat Sw = R_Sw.cast<Scalar>();
+    Mat Sw_large = R_Sw_large.cast<Scalar>();
     Mat Sf = R_Sf.cast<Scalar>();
     Mat Dw = R_Dw.cast<Scalar>();
     Mat Xrand = R_Xrand.cast<Scalar>();
@@ -249,6 +253,8 @@ List aceDLNMbuild(const Eigen::VectorXd R_y,
     Mat Zf = R_Zf.cast<Scalar>();
     Vec Xoffset = R_Xoffset.cast<Scalar>();
     Vec r = R_r.cast<Scalar>();
+    Mat K = R_K.cast<Scalar>();
+    Vec a = R_a.cast<Scalar>();
     Vec alpha_f = R_alpha_f.cast<Scalar>();
     Vec phi = R_phi.cast<Scalar>();
     Scalar log_theta = R_log_theta;
@@ -259,15 +265,15 @@ List aceDLNMbuild(const Eigen::VectorXd R_y,
     Vec logsmoothing = R_logsmoothing.cast<Scalar>();
 
 
-    Modelcppad* modelcppadobj_ptr = new Modelcppad(y, B_inner, knots_f, Sw, Sf, Dw,
-                                    Xrand, Xfix, Zf, Xoffset, r,
+    Modelcppad* modelcppadobj_ptr = new Modelcppad(y, B_inner, knots_f, Sw_large, Sf, Dw,
+                                    Xrand, Xfix, Zf, Xoffset, r, K, a,
                                     alpha_f, phi, log_theta, log_smoothing_f, log_smoothing_w,
                                     betaR, betaF, logsmoothing);  
     
     Rcpp::XPtr<Modelcppad> ptrcppad(modelcppadobj_ptr); 
 
-    Model* modelobj_ptr = new Model(R_y, R_B_inner, R_knots_f, R_Sw, R_Sf, R_Dw,
-                                R_Xrand, R_Xfix, R_Zf, R_Xoffset, R_r,
+    Model* modelobj_ptr = new Model(R_y, R_B_inner, R_knots_f, R_Sw_large, R_Sf, R_Dw,
+                                R_Xrand, R_Xfix, R_Zf, R_Xoffset, R_r, R_K, R_a,
                                 R_alpha_f, R_phi, R_log_theta, R_log_smoothing_f, R_log_smoothing_w,
                                 R_betaR, R_betaF, R_logsmoothing);  
     Rcpp::XPtr<Model> ptr(modelobj_ptr); 
@@ -358,7 +364,7 @@ List aceDLNMopt(SEXP ptr,
 List aceDLNMCI(const Eigen::VectorXd R_y,
                   const Eigen::MatrixXd R_B_inner,
                   const Eigen::VectorXd R_knots_f,
-                  const Eigen::MatrixXd R_Sw,
+                  const Eigen::MatrixXd R_Sw_large,
                   const Eigen::MatrixXd R_Sf,
                   const Eigen::MatrixXd R_Dw,
                   const Eigen::MatrixXd R_Xrand,
@@ -366,6 +372,8 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
                   const Eigen::MatrixXd R_Zf,
                   const Eigen::VectorXd R_Xoffset,
                   const Eigen::VectorXd R_r,
+                  const Eigen::MatrixXd R_K,
+                  const Eigen::VectorXd R_a,
                   Eigen::VectorXd R_alpha_f,
                   Eigen::VectorXd R_phi,
                   double R_log_theta,
@@ -382,18 +390,19 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
   
 
   // construct model
-  Model modelobj(R_y, R_B_inner, R_knots_f, R_Sw, R_Sf, R_Dw,
-                  R_Xrand, R_Xfix, R_Zf, R_Xoffset, R_r,
+  Model modelobj(R_y, R_B_inner, R_knots_f, R_Sw_large, R_Sf, R_Dw,
+                  R_Xrand, R_Xfix, R_Zf, R_Xoffset, R_r, R_K, R_a,
                   R_alpha_f, R_phi, R_log_theta, R_log_smoothing_f, R_log_smoothing_w,
                   R_betaR, R_betaF, R_logsmoothing);
 
 
   int kw = modelobj.kw;
+  int kwopt = modelobj.kwopt;
   int kE = modelobj.kE;
   int kbetaR = modelobj.kbetaR;
   int kbetaF = modelobj.kbetaF;
 
-  int paraSize = kE+kw-1+kbetaR+kbetaF;
+  int paraSize = kE+kwopt+kbetaR+kbetaF;
   int paraSizefull;
 
   // hessian
@@ -401,14 +410,15 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
   Eigen::VectorXd R_alpha_w(kw);
 
   // Vectors for sampling
-  Eigen::VectorXd R_phi_sample(kw-1);
+  Eigen::VectorXd R_phi_sample(kwopt);
+  Eigen::VectorXd R_phiKa_sample(kw-1);
   Eigen::VectorXd R_alpha_w_sample(kw);
   Eigen::VectorXd R_alpha_f_sample(kE);
   Eigen::VectorXd R_betaR_sample(kbetaR);
   Eigen::VectorXd R_betaF_sample(kbetaF);
 
   // Matrices to save results
-  Eigen::MatrixXd phi_sample_mat(Rci, kw-1);
+  Eigen::MatrixXd phi_sample_mat(Rci, kwopt);
   Eigen::MatrixXd alpha_w_sample_mat(Rci, kw);
   Eigen::MatrixXd alpha_f_sample_mat(Rci, kE);
   Eigen::MatrixXd betaR_sample_mat(Rci, kbetaR);
@@ -430,9 +440,10 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
   double R_alpha_w_C_denominator;
   Eigen::VectorXd R_phi_long(kw); // phi_long = c(1, phi)
   R_phi_long(0) = 1.0;
+  Eigen::VectorXd R_phiKa = R_K * R_phi + R_a;
 
   // d alpha_f / d phi
-  Eigen::MatrixXd R_deriv_g(kw,kw-1);
+  Eigen::MatrixXd R_deriv_g(kw,kwopt);
   Eigen::MatrixXd R_deriv_g_large(kw,kw);
   Eigen::MatrixXd R_DiagMat_tmp(kw,kw);
   R_DiagMat_tmp.setZero();
@@ -441,37 +452,7 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
   Eigen::MatrixXd R_deriv(paraSize+1, paraSize);
   R_deriv.setZero();
 
-  if(delta) {
-    // DELTA METHOD
-    paraSizefull = paraSize+1;
-    // deriv_g <- diag(1/as.numeric(sqrt(t(phi_long) %*% Dw %*% phi_long)), kw) - phi_long %*% (t(phi_long) %*% Dw) * (as.numeric(t(phi_long) %*% Dw %*% phi_long)^(-3/2))
-    // deriv_g <- deriv_g[1:(kw), 2:kw]
-    // Var_alpha_w <- deriv_g %*% Var_phi %*% t(deriv_g)
-    for (int j = 0; j < (kw - 1); j++) {
-      R_phi_long(j + 1) = R_phi(j);
-    }
-
-    R_diag_tmp = 1/sqrt(R_phi_long.dot(R_Dw * R_phi_long));
-    R_alpha_w = R_phi_long * R_diag_tmp;
-
-    for (int j = 0; j < kw; j++) {
-      R_DiagMat_tmp(j, j) = R_diag_tmp;
-    }
-    R_deriv_g_large = R_DiagMat_tmp - R_phi_long * R_phi_long.transpose() * R_Dw * pow(R_phi_long.transpose() * R_Dw * R_phi_long, -3/2);
-    R_deriv_g = R_deriv_g_large.block(0, 1, kw, (kw-1));
-
-    for (int j = 0; j < paraSize; j++) {
-      if (j < kE) {
-        R_deriv(j,j) = 1.0;
-      }
-      if (j >= (kE + kw - 1)) {
-        R_deriv(j+1,j) = 1.0;
-      }
-    }
-    R_deriv.block(kE, kE, kw, kw-1) = R_deriv_g;
-  } else {
-    paraSizefull = paraSize;
-  }
+  paraSizefull = paraSize;
 
   // Joint
   R_he = modelobj.he_s_u_mat;
@@ -483,11 +464,8 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
   Eigen::VectorXd zjoint(paraSize);
   Eigen::VectorXd samplejoint(paraSizefull);
 
-  if(delta) {
-    R_u_mod << R_alpha_f, R_alpha_w, R_betaR, R_betaF;
-  } else {
-    R_u_mod << R_alpha_f, R_phi, R_betaR, R_betaF;
-  }
+  
+  R_u_mod << R_alpha_f, R_phi, R_betaR, R_betaF;
 
   // cholesky of inverse Hessian
   R_he_u_L = R_he.llt().matrixL();
@@ -519,17 +497,18 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
       R_betaF_sample = samplejoint.segment(kE+kw+kbetaR, kbetaF);
     } else {
       // get phi
-      R_phi_sample = samplejoint.segment(kE, kw-1);
+      R_phi_sample = samplejoint.segment(kE, kwopt);
+      R_phiKa_sample = R_K * R_phi_sample + R_a;
       // get alpha_w
       for (int j = 0; j < (kw - 1); j++) {
-        R_phi_long(j + 1) = R_phi_sample(j);
+        R_phi_long(j + 1) = R_phiKa_sample(j);
       }
       R_alpha_w_C_denominator = sqrt(R_phi_long.dot(R_Dw * R_phi_long));
       R_alpha_w_sample = R_phi_long / R_alpha_w_C_denominator;
       // get betaR
-      R_betaR_sample = samplejoint.segment(kE+kw-1, kbetaR);
+      R_betaR_sample = samplejoint.segment(kE+kwopt, kbetaR);
       // get betaF
-      R_betaF_sample = samplejoint.segment(kE+kw-1+kbetaR, kbetaF);
+      R_betaF_sample = samplejoint.segment(kE+kwopt+kbetaR, kbetaF);
 
       // save
       phi_sample_mat.row(i) = R_phi_sample.transpose();
@@ -574,7 +553,7 @@ List aceDLNMCI(const Eigen::VectorXd R_y,
 List ConditionalAIC(const Eigen::VectorXd R_y,
                       const Eigen::MatrixXd R_B_inner,
                       const Eigen::VectorXd R_knots_f,
-                      const Eigen::MatrixXd R_Sw,
+                      const Eigen::MatrixXd R_Sw_large,
                       const Eigen::MatrixXd R_Sf,
                       const Eigen::MatrixXd R_Dw,
                       const Eigen::MatrixXd R_Xrand,
@@ -582,6 +561,8 @@ List ConditionalAIC(const Eigen::VectorXd R_y,
                       const Eigen::MatrixXd R_Zf,
                       const Eigen::VectorXd R_Xoffset,
                       const Eigen::VectorXd R_r,
+                      const Eigen::MatrixXd R_K,
+                      const Eigen::VectorXd R_a,
                       Eigen::VectorXd R_alpha_f,
                       Eigen::VectorXd R_phi,
                       double R_log_theta,
@@ -592,8 +573,9 @@ List ConditionalAIC(const Eigen::VectorXd R_y,
                       Eigen::VectorXd R_logsmoothing) {
 
   // construct model
-  Model modelobj(R_y, R_B_inner, R_knots_f, R_Sw, R_Sf, R_Dw,
+  Model modelobj(R_y, R_B_inner, R_knots_f, R_Sw_large, R_Sf, R_Dw,
                   R_Xrand, R_Xfix, R_Zf, R_Xoffset, R_r,
+                  R_K, R_a, 
                   R_alpha_f, R_phi, R_log_theta, R_log_smoothing_f, R_log_smoothing_w,
                   R_betaR, R_betaF, R_logsmoothing);
   modelobj.prepare_AIC();

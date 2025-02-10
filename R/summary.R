@@ -22,7 +22,6 @@ summary.aceDLNM_fit <- function(object, E.eval, others.eval = NULL,
                                    contrast = FALSE,
                                    contrast.lower = 0, contrast.upper = 1,
                                    E0 = NULL, ...){
-
   ## point estimate
   pc <- object$data$pc
   alpha_w <- object$point$alpha_w
@@ -32,12 +31,12 @@ summary.aceDLNM_fit <- function(object, E.eval, others.eval = NULL,
 
   Ufpen <- object$data$Ufpen
   Uwpen <- object$data$Uwpen
-
+  Zwnew <- object$data$Zw %*% Uwpen
   l.eval <- seq(0, object$data$maxL+1, length.out = max(object$data$maxL+1, 500))
-  wl.fit <- function(lnew) mgcv::PredictMat(object$smooth$wl, data = data.frame(l = lnew)) %*% Uwpen %*% alpha_w[2:kw] + alpha_w[1]
+  
+  wl.fit <- function(lnew) c(1, Bsplinevec2Con(lnew, object$data$knots_w, 4, Zwnew)) %*% alpha_w
 
-  # wl.fit <- function(lnew) Bsplinevec2Con(lnew, object$data$knots_w, 4, object$data$Zw %*% Uwpen) %*% alpha_w[2:kw] + alpha_w[1]
-  # wl.fit <- Vectorize(wl.fit)
+  wl.fit <- Vectorize(wl.fit)
 
   wl.mode <- c(wl.fit(l.eval))
 
@@ -71,10 +70,10 @@ summary.aceDLNM_fit <- function(object, E.eval, others.eval = NULL,
   R.CI <- nrow(object$CI.sample[[1]])
   wl.results <- lapply(1:R.CI, function(i){
     alpha_w_sample <- object$CI.sample$alpha_w_sample[i,]
+   
+    wl.fit <- function(lnew) c(1, Bsplinevec2Con(lnew, object$data$knots_w, 4, Zwnew)) %*% alpha_w_sample
+    wl.fit <- Vectorize(wl.fit)
 
-    wl.fit <- function(lnew) mgcv::PredictMat(object$smooth$wl, data = data.frame(l = lnew)) %*% Uwpen %*% alpha_w_sample[2:kw] + alpha_w_sample[1]
-    # wl.fit <- function(lnew) Bsplinevec2Con(lnew, object$data$knots_w, 4, object$data$Zw %*% Uwpen) %*% alpha_w_sample[2:kw] + alpha_w_sample[1]
-    # wl.fit <- Vectorize(wl.fit)
     wl.est <- c(wl.fit(l.eval))
 
     return(cbind(l.eval, wl.est, rep(i, length(wl.est))))
@@ -126,8 +125,9 @@ summary.aceDLNM_fit <- function(object, E.eval, others.eval = NULL,
       alpha_w_sample <- object$CI.sample$alpha_w_sample[i,]
       alpha_f_sample <- object$CI.sample$alpha_f_sample[i,]
 
-      #  wl.fit <- function(lnew) mgcv::PredictMat(object$smooth$wl, data = data.frame(l = lnew)) %*% alpha_w_sample[2:kw] + alpha_w_sample[1]
-      wl.fit <- function(lnew) Bsplinevec2Con(lnew, object$data$knots_w, 4, object$data$Zw %*% Uwpen) %*% alpha_w_sample[2:kw] + alpha_w_sample[1]
+     
+      wl.fit <- function(lnew) c(1, Bsplinevec2Con(lnew, object$data$knots_w, 4, Zwnew)) %*% alpha_w_sample
+
       wl.fit <- Vectorize(wl.fit)
 
       if(is.null(pc)) {
@@ -373,38 +373,57 @@ summary.aceDLNM_fit <- function(object, E.eval, others.eval = NULL,
 
   # AIC
   if(is.null(pc)) {
-    SfCon <- object$smooth$fE$S[[1]]
-    EEf <- eigen(SfCon)
-    # EEf$values
-    # EEf$vectors
-    pf <- ncol(EEf$vectors)
-    rf <- sum(EEf$values > .Machine$double.eps)
-    mf <- pf - rf
-    URf <- EEf$vectors[,1:rf]
-    UFf <- EEf$vectors[,rf + (1:mf)]
-    if (!is.matrix(UFf)) UFf <- cbind(UFf) # ensure UFf in a matrix
-    Dpf <- as.matrix(Matrix::Diagonal(rf,1 / sqrt(Reduce(c,lapply(EEf$values,function(x) x[x>.Machine$double.eps])))))
-    Ufpen <- as.matrix(cbind(URf %*% Dpf, UFf))
-    SfI <- diag(1, nrow = pf, ncol = pf) # identity matrix
-    SfI[rf + (1:mf), rf + (1:mf)] <- 0 # new penalty matrix
+    # SfCon <- object$smooth$fE$S[[1]]
+    # EEf <- eigen(SfCon)
+    # # EEf$values
+    # # EEf$vectors
+    # pf <- ncol(EEf$vectors)
+    # rf <- sum(EEf$values > .Machine$double.eps)
+    # mf <- pf - rf
+    # URf <- EEf$vectors[,1:rf]
+    # UFf <- EEf$vectors[,rf + (1:mf)]
+    # if (!is.matrix(UFf)) UFf <- cbind(UFf) # ensure UFf in a matrix
+    # Dpf <- as.matrix(Matrix::Diagonal(rf,1 / sqrt(Reduce(c,lapply(EEf$values,function(x) x[x>.Machine$double.eps])))))
+    # Ufpen <- as.matrix(cbind(URf %*% Dpf, UFf))
+    # SfI <- diag(1, nrow = pf, ncol = pf) # identity matrix
+    # SfI[rf + (1:mf), rf + (1:mf)] <- 0 # new penalty matrix
 
-    SwCon <- object$smooth$wl$S[[1]]
-    EEw <- eigen(SwCon)
-    pw <- ncol(EEw$vectors)
-    rw <- sum(EEw$values > .Machine$double.eps)
-    mw <- pw - rw
-    URw <- EEw$vectors[,1:rw]
-    UFw <- EEw$vectors[,rw + (1:mw)]
-    if (!is.matrix(UFw)) UFf <- cbind(UFw) # ensure UFw in a matrix
-    Dpw <- as.matrix(Matrix::Diagonal(rw,1 / sqrt(Reduce(c,lapply(EEw$values,function(x) x[x>.Machine$double.eps])))))
+    # SwCon <- t(object$data$Zw) %*% object$smooth$wl$S[[1]] %*% object$data$Zw
+    # EEw <- eigen(SwCon)
+    # pw <- ncol(EEw$vectors)
+    # rw <- sum(EEw$values > .Machine$double.eps)
+    # mw <- pw - rw
+    # URw <- EEw$vectors[,1:rw]
+    # # UFw <- EEw$vectors[,rw + (1:mw)]
+    # # if (!is.matrix(UFw)) UFf <- cbind(UFw) # ensure UFw in a matrix
+    # #
+    # Dpw <- as.matrix(Matrix::Diagonal(rw,1 / sqrt(Reduce(c,lapply(EEw$values,function(x) x[x>.Machine$double.eps])))))
 
-    Uwpen <- as.matrix(cbind(URw %*% Dpw, UFw))
-    SwI <- diag(1, nrow = pw, ncol = pw) # identity matrix
-    SwI[rw + (1:mw), rw + (1:mw)] <- 0 # new penalty matrix
+    # if(mw == 0) {
+    #   Uwpen <- as.matrix(URw %*% Dpw)
+    # } else {
+    #   UFw <- EEw$vectors[,rw + (1:mw)]
+    #   if (!is.matrix(UFw)) UFf <- cbind(UFw) # ensure UFw in a matrix
+    #   Uwpen <- as.matrix(cbind(URw %*% Dpw, UFw))
+    # }
+
+    # SwI <- diag(1, nrow = pw, ncol = pw) # identity matrix
+    # if(mw > 0) SwI[rw + (1:mw), rw + (1:mw)] <- 0 # new penalty matrix
+
+
+    # if(object$conL){
+    #   SwI_large <- t(object$data$Zw0) %*% cbind(0, rbind(0, SwI)) %*% object$data$Zw0
+    # } else {
+    #   SwI_large <- cbind(0, rbind(0, SwI))
+    # }
+
+
+
 
     if(!is.null(object$formula$smooth)) {
-      AIC <- ConditionalAIC(object$data$y, object$data$B_inner, object$smooth$fE$knots, SwI, SfI, object$data$Dw,
+      AIC <- ConditionalAIC(object$data$y, object$data$B_inner, object$smooth$fE$knots, object$data$SwI_large, object$data$SfI, object$data$Dw,
                             object$data$Xrand, object$data$Xfix, object$data$Zf %*% object$data$Ufpen, object$data$offset$Xoffset, object$data$r,
+                            object$data$K, object$data$a,
                             object$point$alpha_f,
                             object$point$phi,
                             object$point$log_theta,

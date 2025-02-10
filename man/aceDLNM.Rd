@@ -19,6 +19,7 @@ aceDLNM(
   interpolate = TRUE,
   kx.per500 = 300,
   E.min,
+  conL = FALSE,
   pc = NULL,
   par.start,
   par.fix,

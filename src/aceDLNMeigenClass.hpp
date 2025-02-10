@@ -249,8 +249,8 @@ class Model {
 private:
   // DATA
   const Eigen::VectorXd y; // Response
-  const Eigen::MatrixXd Sw; // penalty matrix for w(l)
   const Eigen::MatrixXd Sf; // penalty matrix for f(E)
+  const Eigen::MatrixXd Sw_large;
   const Eigen::MatrixXd B_inner;
   const Eigen::VectorXd knots_f; // knots for f(E) B-spline
   const Eigen::MatrixXd Dw;  // \int w(l)^2 dl = 1
@@ -258,30 +258,18 @@ private:
   const Eigen::MatrixXd Xfix; // fixed effects
   const Eigen::MatrixXd Xrand; // random effects
   const Eigen::VectorXd r; // rank of each smooth
-
   const Eigen::MatrixXd Zf;
 
   const Eigen::VectorXd Xoffset; // offset
   
 public:
   // DATA
-  // const Eigen::VectorXd y; // Response
-  // const Eigen::MatrixXd Sw; // penalty matrix for w(l)
-  // const Eigen::MatrixXd Sf; // penalty matrix for f(E)
-  // const Eigen::MatrixXd B_inner;
-  // const Eigen::VectorXd knots_f; // knots for f(E) B-spline
-  // const Eigen::MatrixXd Dw;  // \int w(l)^2 dl = 1
-
-  // const Eigen::MatrixXd Xfix; // fixed effects
-  // const Eigen::MatrixXd Xrand; // random effects
-  // const Eigen::VectorXd r; // rank of each smooth
-
-  // const Eigen::MatrixXd Zf;
-
-  // const Eigen::VectorXd Xoffset; // offset
+  const Eigen::MatrixXd K;
+  const Eigen::VectorXd a; 
 
   int n;
   int kw;
+  int kwopt;
   int kE;
   int kbetaR;
   int kbetaF;
@@ -290,6 +278,7 @@ public:
   // PARAMETERS
   Eigen::VectorXd alpha_f;
   Eigen::VectorXd phi;
+  Eigen::VectorXd phiKa; // phitKa = K * phi + a
   double log_theta;
   double log_smoothing_f;
   double log_smoothing_w;
@@ -405,7 +394,7 @@ public:
   Model(const Eigen::VectorXd& y_,
         const Eigen::MatrixXd& B_inner_,
         const Eigen::VectorXd& knots_f_,
-        const Eigen::MatrixXd& Sw_,
+        const Eigen::MatrixXd& Sw_large_,
         const Eigen::MatrixXd& Sf_,
         const Eigen::MatrixXd& Dw_,
         const Eigen::MatrixXd& Xrand_,
@@ -413,6 +402,8 @@ public:
         const Eigen::MatrixXd& Zf_,
         const Eigen::VectorXd& Xoffset_,
         const Eigen::VectorXd& r_,
+        const Eigen::MatrixXd& K_,
+        const Eigen::VectorXd& a_,
         Eigen::VectorXd& alpha_f_,
         Eigen::VectorXd& phi_,
         double log_theta_,
@@ -421,11 +412,13 @@ public:
         Eigen::VectorXd& betaR_,
         Eigen::VectorXd& betaF_,
         Eigen::VectorXd& logsmoothing_) :
-    y(y_), B_inner(B_inner_), knots_f(knots_f_), Sw(Sw_), Sf(Sf_), Dw(Dw_), Xrand(Xrand_), Xfix(Xfix_), Zf(Zf_), Xoffset(Xoffset_), r(r_),
+    y(y_), B_inner(B_inner_), knots_f(knots_f_), Sw_large(Sw_large_), Sf(Sf_), Dw(Dw_), Xrand(Xrand_), Xfix(Xfix_), Zf(Zf_), Xoffset(Xoffset_), r(r_), 
+    K(K_), a(a_),
     alpha_f(alpha_f_), phi(phi_), log_theta(log_theta_), log_smoothing_f(log_smoothing_f_), log_smoothing_w(log_smoothing_w_), betaR(betaR_), betaF(betaF_), logsmoothing(logsmoothing_) {
 
       n = y.size(); // sample size
-      kw = phi.size() + 1;
+      kw = a.size() + 1;
+      kwopt = K.cols(); // conL = TRUE: kwopt = kw-2; conL = FALSE: kwopt = kw-1
       kE = alpha_f.size();
       kbetaR = betaR.size();
       kbetaF = betaF.size();
@@ -439,11 +432,12 @@ public:
       for (int i = 0; i < p; i++) smoothing(i) = exp(logsmoothing(i));
 
 
+      phiKa = K * phi + a;
 
-      phi_long.resize(kw); // phi_long = c(1, phi)
+      phi_long.resize(kw); // phi_long = c(1, phiKa)
       phi_long(0) = 1.0;
       for (int j = 0; j < (kw - 1); j++) {
-        phi_long(j + 1) = phi(j);
+        phi_long(j + 1) = phiKa(j);
       }
       alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
       alpha_w_C = phi_long / alpha_w_C_denominator;
@@ -467,10 +461,10 @@ public:
       // Initialize the derivative components and NegativeLogLikelihood
       dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
       d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
-      gr_s_u_vec.resize(kw+kE-1+kbetaR+kbetaF);
-      he_s_u_mat.resize(kw+kE-1+kbetaR+kbetaF, kw+kE-1+kbetaR+kbetaF);
+      gr_s_u_vec.resize(kwopt+kE+kbetaR+kbetaF);
+      he_s_u_mat.resize(kwopt+kE+kbetaR+kbetaF, kwopt+kE+kbetaR+kbetaF);
       gr_s_par_vec.resize(3+p);
-      he_s_par_u_mat.resize(3+p, kw+kE-1+kbetaR+kbetaF);
+      he_s_par_u_mat.resize(3+p, kwopt+kE+kbetaR+kbetaF);
       gr_inner_vec.resize(kE+kbetaR+kbetaF);
       he_inner_mat.resize(kE+kbetaR+kbetaF, kE+kbetaR+kbetaF);
 
@@ -480,8 +474,8 @@ public:
       NegativeLogLikelihood();
 
       // Initialize PL
-      PL_gradient.resize(kw-1);
-      PL_hessian.resize(kw-1, kw-1);
+      PL_gradient.resize(kwopt);
+      PL_hessian.resize(kwopt, kwopt);
     }
 
   // Functions to set parameters
@@ -496,10 +490,14 @@ public:
 
   void setPhi(const Eigen::VectorXd phi_) {
     phi = phi_;
-    // re-generate
+
+    phiKa = K * phi + a;
+    // phi_long = c(1, phiKa)
+    phi_long(0) = 1.0;
     for (int j = 0; j < (kw - 1); j++) {
-      phi_long(j + 1) = phi(j);
+      phi_long(j + 1) = phiKa(j);
     }
+
     alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
     alpha_w_C = phi_long / alpha_w_C_denominator;
     alpha_w_C_pen = phi / alpha_w_C_denominator;
@@ -622,25 +620,25 @@ public:
     //             he_alpha_f_log_smoothing_f_vec.transpose(), 0, 0, he_log_smoothing_f_scalar, 0;
     //             0, he_phi_log_smoothing_w_vec.transpose(), 0, 0, he_log_smoothing_w_scalar]
     he_s_u_mat.block(0, 0, kE, kE)  = he_alpha_f_mat;
-    he_s_u_mat.block(0, kE, kE, kw-1) = he_alpha_f_phi_mat;
-    he_s_u_mat.block(kE, 0, kw-1, kE) = he_alpha_f_phi_mat.transpose();
-    he_s_u_mat.block(kE, kE, kw-1, kw-1) = he_phi_mat;
+    he_s_u_mat.block(0, kE, kE, kwopt) = he_alpha_f_phi_mat;
+    he_s_u_mat.block(kE, 0, kwopt, kE) = he_alpha_f_phi_mat.transpose();
+    he_s_u_mat.block(kE, kE, kwopt, kwopt) = he_phi_mat;
 
 
-    he_s_u_mat.block(kE+kw-1, kE+kw-1, kbetaR, kbetaR) = he_betaR_mat;
-    he_s_u_mat.block(kE+kw-1+kbetaR, kE+kw-1+kbetaR, kbetaF, kbetaF) = he_betaF_mat;
+    he_s_u_mat.block(kE+kwopt, kE+kwopt, kbetaR, kbetaR) = he_betaR_mat;
+    he_s_u_mat.block(kE+kwopt+kbetaR, kE+kwopt+kbetaR, kbetaF, kbetaF) = he_betaF_mat;
 
-    he_s_u_mat.block(0,kE+kw-1,kE,kbetaR) = he_alpha_f_betaR_mat;
-    he_s_u_mat.block(kE,kE+kw-1,kw-1,kbetaR) = he_phi_betaR_mat;
-    he_s_u_mat.block(0,kE+kw-1+kbetaR,kE,kbetaF) = he_alpha_f_betaF_mat;
-    he_s_u_mat.block(kE,kE+kw-1+kbetaR,kw-1,kbetaF) = he_phi_betaF_mat;
-    he_s_u_mat.block(kE+kw-1, kE+kw-1+kbetaR, kbetaR, kbetaF) = he_betaR_betaF_mat;
+    he_s_u_mat.block(0,kE+kwopt,kE,kbetaR) = he_alpha_f_betaR_mat;
+    he_s_u_mat.block(kE,kE+kwopt,kwopt,kbetaR) = he_phi_betaR_mat;
+    he_s_u_mat.block(0,kE+kwopt+kbetaR,kE,kbetaF) = he_alpha_f_betaF_mat;
+    he_s_u_mat.block(kE,kE+kwopt+kbetaR,kwopt,kbetaF) = he_phi_betaF_mat;
+    he_s_u_mat.block(kE+kwopt, kE+kwopt+kbetaR, kbetaR, kbetaF) = he_betaR_betaF_mat;
 
-    he_s_u_mat.block(kE+kw-1,0,kbetaR,kE) = he_alpha_f_betaR_mat.transpose();
-    he_s_u_mat.block(kE+kw-1,kE,kbetaR,kw-1) = he_phi_betaR_mat.transpose();
-    he_s_u_mat.block(kE+kw-1+kbetaR,0,kbetaF,kE) = he_alpha_f_betaF_mat.transpose();
-    he_s_u_mat.block(kE+kw-1+kbetaR,kE,kbetaF,kw-1) = he_phi_betaF_mat.transpose();
-    he_s_u_mat.block(kE+kw-1+kbetaR, kE+kw-1, kbetaF, kbetaR) = he_betaR_betaF_mat.transpose();
+    he_s_u_mat.block(kE+kwopt,0,kbetaR,kE) = he_alpha_f_betaR_mat.transpose();
+    he_s_u_mat.block(kE+kwopt,kE,kbetaR,kwopt) = he_phi_betaR_mat.transpose();
+    he_s_u_mat.block(kE+kwopt+kbetaR,0,kbetaF,kE) = he_alpha_f_betaF_mat.transpose();
+    he_s_u_mat.block(kE+kwopt+kbetaR,kE,kbetaF,kwopt) = he_phi_betaF_mat.transpose();
+    he_s_u_mat.block(kE+kwopt+kbetaR, kE+kwopt, kbetaF, kbetaR) = he_betaR_betaF_mat.transpose();
 
     // make it symmetric. Comment out ...
     // he_s_u_mat = (he_s_u_mat + he_s_u_mat.transpose())/2.0;
@@ -683,8 +681,8 @@ public:
 
     he_s_par_u_mat.row(0) << he_alpha_f_log_theta_vec.transpose(), he_phi_log_theta_vec.transpose(), he_betaR_log_theta_vec.transpose(), he_betaF_log_theta_vec.transpose();
     he_s_par_u_mat.block(1, 0, 1, kE) = he_alpha_f_log_smoothing_f_vec.transpose();
-    he_s_par_u_mat.block(2, kE, 1, kw-1) = he_phi_log_smoothing_w_vec.transpose();
-    he_s_par_u_mat.block(3, kE+kw-1, p, kbetaR) = he_betaR_logsmoothing_mat.transpose();
+    he_s_par_u_mat.block(2, kE, 1, kwopt) = he_phi_log_smoothing_w_vec.transpose();
+    he_s_par_u_mat.block(3, kE+kwopt, p, kbetaR) = he_betaR_logsmoothing_mat.transpose();
   }
 
   // update variables related to alpha_f, betaR and betaF.
@@ -745,7 +743,7 @@ public:
 
     // part 1: DLNM
     // Smooth Penalty
-    loglik += -0.5 * smoothing_w * alpha_w_C_pen.dot(Sw * alpha_w_C_pen) - 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f);
+    loglik += -0.5 * smoothing_w * alpha_w_C.dot(Sw_large * alpha_w_C) - 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f);
     // Scale
     loglik += (kw-1-1) / 2.0 * log_smoothing_w + (kE-1) / 2.0 * log_smoothing_f;
     
@@ -788,8 +786,8 @@ public:
     I_phi_mat = I_phi();
     I_mat = he_s_u_mat;
     I_mat.block(0, 0, kE, kE)  = I_alpha_f_mat;
-    I_mat.block(kE, kE, kw-1, kw-1) = I_phi_mat;
-    I_mat.block(kE+kw-1, kE+kw-1, kbetaR, kbetaR) = I_betaR_mat;
+    I_mat.block(kE, kE, kwopt, kwopt) = I_phi_mat;
+    I_mat.block(kE+kwopt, kE+kwopt, kbetaR, kbetaR) = I_betaR_mat;
   }
 
 
@@ -899,65 +897,6 @@ public:
     return out;
   }
 
-  // // d^2 mu / d alpha_f^2
-  // std::vector<Eigen::MatrixXd> d2mu_dfdf () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_df_mat.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 mu / d betaR^2
-  // std::vector<Eigen::MatrixXd> d2mu_dbetaRdbetaR () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_dbetaR_mat.row(i).transpose() * dlogmu_dbetaR_mat.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 mu / d betaF^2
-  // std::vector<Eigen::MatrixXd> d2mu_dbetaFdbetaF () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_dbetaF_mat.row(i).transpose() * dlogmu_dbetaF_mat.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 log(mu) / d alpha_w^2
-  // std::vector<Eigen::MatrixXd> d2logmu_dwdw () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   Eigen::VectorXd Bf2nd;
-  //   for (int i = 0; i < n; i++) {
-  //     Bf2nd = BsplinevecCon2nd(E(i), knots_f, 4, Zf);
-  //     out.push_back((Bf2nd.dot(alpha_f)) * B_inner.row(i).transpose() * B_inner.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 mu / d alpha_w^2
-  // std::vector<Eigen::MatrixXd> d2mu_dwdw () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_dw_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i) * d2logmu_dwdw_list.at(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 log(mu) / d alpha_f d alpha_w
-  // std::vector<Eigen::MatrixXd> d2logmu_dfdw () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(BsplinevecCon1st(E(i), knots_f, 4, Zf) * B_inner.row(i));
-  //   }
-  //   return out;
-  // }
-  // // d^2 mu / d alpha_f d alpha_w
-  // std::vector<Eigen::MatrixXd> d2mu_dfdw () {
-  //   std::vector<Eigen::MatrixXd> out;
-  //   for (int i = 0; i < n; i++) {
-  //     out.push_back(mu(i) * dlogmu_df_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i)*d2logmu_dfdw_list.at(i));
-  //   }
-  //   return out;
-  // }
-
 
 
   // 3. Re-parameterization
@@ -978,7 +917,7 @@ public:
 
     Eigen::MatrixXd deriv_g = Ddense - deriv_g2;
     // Remove the first column
-    Eigen::MatrixXd out = deriv_g.block(0, 1, kw, kw - 1);
+    Eigen::MatrixXd out = deriv_g.block(0, 1, kw, kw - 1) * K; // dim = (kw * kwopt)
     return out;
   }
 
@@ -1001,7 +940,7 @@ public:
         Eigen::MatrixXd m2 = -1.0 * tmp1* Dw + 3.0 * tmp2 * Dwphi * Dwphi.transpose();
         outlarge = -1.0 * m1 + m2; // or m1 - m2 or m2 - m1
       }
-      out.push_back(outlarge.block(1, 1, kw-1, kw-1));
+      out.push_back(K.transpose() * outlarge.block(1, 1, kw-1, kw-1) * K); // dim = (kwopt * kwopt)
     }
     return out;
   }
@@ -1030,14 +969,9 @@ public:
   }
 
   Eigen::VectorXd gr_alpha_w () {
-    Eigen::VectorXd gr_pen_w = smoothing_w * Sw * alpha_w_C_pen;
-    Eigen::VectorXd gr_pen_w_long(kw);
-    gr_pen_w_long(0) = 0.0;
-    for (int j = 0; j < (kw - 1); j++) {
-      gr_pen_w_long(j + 1) = gr_pen_w(j);
-    }
+    Eigen::VectorXd gr_pen_w = smoothing_w * Sw_large * alpha_w_C;
 
-    Eigen::VectorXd out = - dmu_dw_mat.transpose() * dlogdensity_dmu_vec + gr_pen_w_long;
+    Eigen::VectorXd out = - dmu_dw_mat.transpose() * dlogdensity_dmu_vec + gr_pen_w;
     return out;
   }
   Eigen::VectorXd gr_phi () {
@@ -1048,7 +982,7 @@ public:
     return 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f) - 0.5 * (kE-1);
   }
   double gr_log_smoothing_w () {
-    return 0.5 * smoothing_w * alpha_w_C_pen.dot(Sw * alpha_w_C_pen) - 0.5 * (kw-1-1);
+    return 0.5 * smoothing_w * alpha_w_C.dot(Sw_large * alpha_w_C) - 0.5 * (kw-1-1);
   }
   double gr_log_theta () {
     return -1.0 * theta * dlogdensity_dtheta_scalar;
@@ -1148,9 +1082,6 @@ public:
       out1 += d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * dmu_dw_mat.row(i);
       out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_dw_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i) * (BsplinevecCon2nd(E(i), knots_f, 4, Zf).dot(alpha_f)) * B_inner.row(i).transpose() * B_inner.row(i));
     }
-    Eigen::MatrixXd Sw_large(kw, kw);
-    Sw_large.setZero();
-    Sw_large.block(1, 1, kw-1, kw-1) = Sw;
     return - out1 - out2 + smoothing_w*Sw_large;
   }
 
@@ -1168,7 +1099,7 @@ public:
 
   Eigen::MatrixXd he_phi () {
     Eigen::MatrixXd out1 = dw_dphi_mat.transpose() * he_alpha_w_mat * dw_dphi_mat;
-    Eigen::MatrixXd out2(kw-1, kw-1);
+    Eigen::MatrixXd out2(kwopt, kwopt);
     out2.setZero();
     for (int s = 0; s < kw; s++) {
       out2 = out2 + gr_alpha_w_vec(s) * d2w_dphidphi_list.at(s);
@@ -1178,7 +1109,7 @@ public:
 
   Eigen::MatrixXd I_phi () { // hessian of negative likelihood without penalty  
     Eigen::MatrixXd out1 = dw_dphi_mat.transpose() * I_alpha_w_mat * dw_dphi_mat;
-    Eigen::MatrixXd out2(kw-1, kw-1);
+    Eigen::MatrixXd out2(kwopt, kwopt);
     out2.setZero();
     for (int s = 0; s < kw; s++) {
       out2 = out2 + gr_alpha_w_vec(s) * d2w_dphidphi_list.at(s);
@@ -1225,8 +1156,8 @@ public:
     return - out1 - out2;
   }
   Eigen::MatrixXd he_phi_betaR () {
-    Eigen::MatrixXd out1(kw-1, kbetaR);
-    Eigen::MatrixXd out2(kw-1, kbetaR);
+    Eigen::MatrixXd out1(kwopt, kbetaR);
+    Eigen::MatrixXd out2(kwopt, kbetaR);
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
@@ -1236,8 +1167,8 @@ public:
     return - out1 - out2;
   }
   Eigen::MatrixXd he_phi_betaF () {
-    Eigen::MatrixXd out1(kw-1, kbetaF);
-    Eigen::MatrixXd out2(kw-1, kbetaF);
+    Eigen::MatrixXd out1(kwopt, kbetaF);
+    Eigen::MatrixXd out2(kwopt, kbetaF);
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
@@ -1258,29 +1189,13 @@ public:
     return - out1 - out2;
   }
 
-  // double he_log_smoothing_f () {
-  //   return 0.5 * smoothing_f * alpha_f.dot(Sf * alpha_f);
-  // }
-  // double he_log_smoothing_w () {
-  //   return 0.5 * smoothing_w * alpha_w_C_pen.dot(Sw * alpha_w_C_pen);
-  // }
-  // double he_log_theta () {
-  //   return -1.0*theta*theta * d2logdensity_dthetadtheta_scalar - theta * dlogdensity_dtheta_scalar;
-  // }
 
   Eigen::VectorXd he_alpha_f_log_smoothing_f () {
     return smoothing_f * Sf * alpha_f;
   }
   Eigen::VectorXd he_phi_log_smoothing_w () {
 
-    Eigen::VectorXd he_alpha_w_C_pen_log_smoothing_w = smoothing_w * Sw * alpha_w_C_pen;
-
-    Eigen::VectorXd he_alpha_w_log_smoothing_w(kw);
-    he_alpha_w_log_smoothing_w(0) = 0.0;
-    for (int i = 1; i < kw; i++)
-    {
-      he_alpha_w_log_smoothing_w(i) = he_alpha_w_C_pen_log_smoothing_w(i-1);
-    }
+    Eigen::VectorXd he_alpha_w_log_smoothing_w = smoothing_w * Sw_large * alpha_w_C;
 
     return dw_dphi_mat.transpose() * he_alpha_w_log_smoothing_w;
   }
@@ -1356,6 +1271,7 @@ void PL(Model& modelobj, bool verbose){
     
     int kE = modelobj.kE;
     int kw = modelobj.kw;
+    int kwopt = modelobj.kwopt;
     int kbetaR = modelobj.kbetaR;
     int kbetaF = modelobj.kbetaF;
     int converge = 0;
@@ -1529,7 +1445,7 @@ void PL(Model& modelobj, bool verbose){
     modelobj.NegativeLogLikelihood();
 
     Eigen::VectorXd gr_PL = modelobj.gr_phi_vec;
-    Eigen::MatrixXd he_PL(kw-1, kw-1);
+    Eigen::MatrixXd he_PL(kwopt, kwopt);
     
     // OLD: 
     // Eigen::MatrixXd mat1 = modelobj.he_alpha_f_mat.ldlt().solve(modelobj.he_alpha_f_phi_mat);
@@ -1537,10 +1453,10 @@ void PL(Model& modelobj, bool verbose){
 
     // NEW: 
     modelobj.derivative_f();
-    Eigen::MatrixXd mat_tmp_PL(kE+kbetaF+kbetaR,kw-1);
-    mat_tmp_PL.block(0, 0, kE, kw-1) = modelobj.he_alpha_f_phi_mat;
-    mat_tmp_PL.block(kE, 0, kbetaR, kw-1) = modelobj.he_phi_betaR_mat.transpose();
-    mat_tmp_PL.block(kE+kbetaR, 0, kbetaF, kw-1) = modelobj.he_phi_betaF_mat.transpose();
+    Eigen::MatrixXd mat_tmp_PL(kE+kbetaF+kbetaR,kwopt);
+    mat_tmp_PL.block(0, 0, kE, kwopt) = modelobj.he_alpha_f_phi_mat;
+    mat_tmp_PL.block(kE, 0, kbetaR, kwopt) = modelobj.he_phi_betaR_mat.transpose();
+    mat_tmp_PL.block(kE+kbetaR, 0, kbetaF, kwopt) = modelobj.he_phi_betaF_mat.transpose();
     Eigen::MatrixXd mat1 = modelobj.he_inner_mat.ldlt().solve(mat_tmp_PL);
     he_PL = modelobj.he_phi_mat - mat1.transpose() * mat_tmp_PL;
 
@@ -1573,18 +1489,19 @@ void Inner(Model& modelobj, bool verbose) {
 
     int kE = modelobj.kE;
     int kw = modelobj.kw;
+    int kwopt = modelobj.kwopt;
 
     // catch double PL.fn
     double s;
     double s_tmp;
 
     // update steps
-    Eigen::VectorXd step(kw-1);
+    Eigen::VectorXd step(kwopt);
     step.setZero();
 
     
-    Eigen::MatrixXd H(kw-1, kw-1);
-    Eigen::VectorXd g(kw-1);
+    Eigen::MatrixXd H(kwopt, kwopt);
+    Eigen::VectorXd g(kwopt);
 
     g.setZero();
     H.setZero();
@@ -1601,7 +1518,7 @@ void Inner(Model& modelobj, bool verbose) {
       eigen_out.noalias() += H * eigen_in; // Efficient version
     };
 
-    LambdaLanczos<double> engine(mv_mul, kw-1, false, 1); // Find 1 minimum eigenvalue
+    LambdaLanczos<double> engine(mv_mul, kwopt, false, 1); // Find 1 minimum eigenvalue
     std::vector<double> smallest_eigenvalues;
     std::vector<std::vector<double>> smallest_eigenvectors;
     double smallest_eigval; // smallest eigenvalue
@@ -1609,9 +1526,9 @@ void Inner(Model& modelobj, bool verbose) {
     
 
     // eigen decomposition
-    Eigen::VectorXd eigvals(kw-1);
+    Eigen::VectorXd eigvals(kwopt);
     eigvals.setZero();
-    Eigen::VectorXd invabseigvals(kw-1);
+    Eigen::VectorXd invabseigvals(kwopt);
     invabseigvals.setZero();
     // double eigval;
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(H,false); // Only values, not vectors
@@ -1620,6 +1537,7 @@ void Inner(Model& modelobj, bool verbose) {
     // check range of E
     Eigen::VectorXd phi_long(kw);
     phi_long(0) = 1.0;
+    Eigen::VectorXd phiKa(kw-1);
     Eigen::VectorXd alpha_w_C;
     Eigen::VectorXd E;
     int kmin;
@@ -1632,11 +1550,14 @@ void Inner(Model& modelobj, bool verbose) {
     Eigen::MatrixXd Dw = modelobj.getDw();
     Eigen::VectorXd knots_f = modelobj.getknots_f();
 
+    Eigen::MatrixXd K = modelobj.K;
+    Eigen::VectorXd a = modelobj.a;
+
     double delta = 1.0; // for New Q-Newton method
     double g_norm;
 
     // initialize gradient
-    for (int i = 0; i < (kw-1); i++) g(i) = 1. + eps;
+    for (int i = 0; i < kwopt; i++) g(i) = 1. + eps;
 
     if(verbose) std::cout << "* Start optimize profile likelihood" << std::endl;
 
@@ -1663,10 +1584,10 @@ void Inner(Model& modelobj, bool verbose) {
         eigvec.compute(H); // Compute eigenvalues and vectors
         eigvals = eigvec.eigenvalues().array();
         if (abs(eigvals.prod()) < 1e-3) {
-          for (int iii = 0; iii < (kw-1); iii++) eigvals(iii) += delta*g_norm;
+          for (int iii = 0; iii < kwopt; iii++) eigvals(iii) += delta*g_norm;
         }
-        // for (int i = 0; i < (kw-1); i++) invabseigvals(i) = 1. / max(abs(eigvals(i)), mineig); // flip signs
-        for (int i = 0; i < (kw-1); i++) invabseigvals(i) = 1. / abs(eigvals(i)); // flip signs
+        // for (int i = 0; i < kwopt; i++) invabseigvals(i) = 1. / max(abs(eigvals(i)), mineig); // flip signs
+        for (int i = 0; i < kwopt; i++) invabseigvals(i) = 1. / abs(eigvals(i)); // flip signs
         // std::cout << "invabseigvals max" << invabseigvals.maxCoeff() << std::endl;
         step = eigvec.eigenvectors() * (invabseigvals.asDiagonal()) * (eigvec.eigenvectors().transpose()) * g;
       } else {
@@ -1693,8 +1614,9 @@ void Inner(Model& modelobj, bool verbose) {
       phi -= step;
 
       // ****** start checking range of E
+      phiKa = K*phi + a;
       for (int j = 0; j < (kw - 1); j++) {
-        phi_long(j + 1) = phi(j);
+        phi_long(j + 1) = phiKa(j);
       }
       alpha_w_C = phi_long / sqrt(phi_long.dot(Dw * phi_long));
       E = B_inner * alpha_w_C;
@@ -1706,9 +1628,9 @@ void Inner(Model& modelobj, bool verbose) {
         stephalve++;
         step /= 2.;
         phi += step;
-
+        phiKa = K*phi + a;
         for (int j = 0; j < (kw - 1); j++) {
-          phi_long(j + 1) = phi(j);
+          phi_long(j + 1) = phiKa(j);
         }
         alpha_w_C = phi_long / sqrt(phi_long.dot(Dw * phi_long));
         E = B_inner * alpha_w_C;

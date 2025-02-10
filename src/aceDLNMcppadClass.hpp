@@ -322,7 +322,7 @@ class Modelcppad {
 private:
   // DATA
   const Vec y; // Response
-  const Mat Sw; // penalty matrix for w(l)
+  const Mat Sw_large; // penalty matrix for w(l)
   const Mat Sf; // penalty matrix for f(E)
   const Mat B_inner;
   const Vec knots_f; // knots for f(E) B-spline
@@ -337,24 +337,12 @@ private:
   const Vec Xoffset; // offset
   
 public:
-  // DATA
-  // const Vec y; // Response
-  // const Mat Sw; // penalty matrix for w(l)
-  // const Mat Sf; // penalty matrix for f(E)
-  // const Mat B_inner;
-  // const Vec knots_f; // knots for f(E) B-spline
-  // const Mat Dw;  // \int w(l)^2 dl = 1
-
-  // const Mat Xfix; // fixed effects
-  // const Mat Xrand; // random effects
-  // const Vec r; // rank of each smooth
-
-  // const Mat Zf;
-
-  // const Vec Xoffset; // offset
-
+  const Mat K;
+  const Vec a; 
+  
   int n;
   int kw;
+  int kwopt;
   int kE;
   int kbetaR;
   int kbetaF;
@@ -363,6 +351,7 @@ public:
   // PARAMETERS
   Vec alpha_f;
   Vec phi;
+  Vec phiKa;
   Scalar log_theta;
   Scalar log_smoothing_f;
   Scalar log_smoothing_w;
@@ -428,7 +417,7 @@ public:
   Modelcppad(const Vec& y_,
             const Mat& B_inner_,
             const Vec& knots_f_,
-            const Mat& Sw_,
+            const Mat& Sw_large_,
             const Mat& Sf_,
             const Mat& Dw_,
             const Mat& Xrand_,
@@ -436,6 +425,8 @@ public:
             const Mat& Zf_,
             const Vec& Xoffset_,
             const Vec& r_,
+            const Mat& K_,
+            const Vec& a_,
             Vec& alpha_f_,
             Vec& phi_,
             Scalar log_theta_,
@@ -444,11 +435,13 @@ public:
             Vec& betaR_,
             Vec& betaF_,
             Vec& logsmoothing_) :
-    y(y_), B_inner(B_inner_), knots_f(knots_f_), Sw(Sw_), Sf(Sf_), Dw(Dw_), Xrand(Xrand_), Xfix(Xfix_), Zf(Zf_), Xoffset(Xoffset_), r(r_),
+    y(y_), B_inner(B_inner_), knots_f(knots_f_), Sw_large(Sw_large_), Sf(Sf_), Dw(Dw_), Xrand(Xrand_), Xfix(Xfix_), Zf(Zf_), Xoffset(Xoffset_), r(r_),
+    K(K_), a(a_),
     alpha_f(alpha_f_), phi(phi_), log_theta(log_theta_), log_smoothing_f(log_smoothing_f_), log_smoothing_w(log_smoothing_w_), betaR(betaR_), betaF(betaF_), logsmoothing(logsmoothing_) {
 
       n = y.size(); // sample size
-      kw = phi.size() + 1;
+      kw = a.size() + 1;
+      kwopt = K.cols(); // conL = TRUE: kwopt = kw-2; conL = FALSE: kwopt = kw-1
       kE = alpha_f.size();
       kbetaR = betaR.size();
       kbetaF = betaF.size();
@@ -461,12 +454,12 @@ public:
       smoothing.resize(p);
       for (int i = 0; i < p; i++) smoothing(i) = exp(logsmoothing(i));
 
+      phiKa = K * phi + a;
 
-
-      phi_long.resize(kw); // phi_long = c(1, phi)
+      phi_long.resize(kw); // phi_long = c(1, phiKa)
       phi_long(0) = 1.0;
       for (int j = 0; j < (kw - 1); j++) {
-        phi_long(j + 1) = phi(j);
+        phi_long(j + 1) = phiKa(j);
       }
       alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
       alpha_w_C = phi_long / alpha_w_C_denominator;
@@ -491,7 +484,7 @@ public:
       dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
       d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
       
-      he_s_u_mat.resize(kw+kE-1+kbetaR+kbetaF, kw+kE-1+kbetaR+kbetaF);
+      he_s_u_mat.resize(kwopt+kE+kbetaR+kbetaF, kwopt+kE+kbetaR+kbetaF);
 
       derivative_coef();
       derivative_he();
@@ -500,49 +493,16 @@ public:
   // Functions to set parameters
   void setAlphaF(const Vec alpha_f_) {
     alpha_f = alpha_f_;
-
-    // for (int i = 0; i < n; i++) {
-    //   eta(i) = Bf_matrix.row(i).dot(alpha_f);
-    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    // }
   }
 
   void setPhi(const Vec phi_) {
     phi = phi_;
-    // // re-generate
-    // for (int j = 0; j < (kw - 1); j++) {
-    //   phi_long(j + 1) = phi(j);
-    // }
-    // alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
-    // alpha_w_C = phi_long / alpha_w_C_denominator;
-    // alpha_w_C_pen = phi / alpha_w_C_denominator;
-    // E = B_inner * alpha_w_C;
-    // Vec Bf;
-
-    // for (int i = 0; i < n; i++) {
-    //   Bf = BsplinevecCon(E(i), knots_f, 4, Zf);
-    //   Bf_matrix.row(i) = Bf;
-    //   eta(i) = Bf.dot(alpha_f);
-    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    // }
-
-    // dw_dphi_mat = dw_dphi(); // d alpha_w / d phi
-    // d2w_dphidphi_list = d2w_dphidphi(); // d^2 alpha_w / d phi d phi
-
   }
   void setBetaF(const Vec betaF_) {
     betaF = betaF_;
-    // for (int i = 0; i < n; i++) {
-    //   eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
-    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    // }
   }
   void setBetaR(const Vec betaR_) {
     betaR = betaR_;
-    // for (int i = 0; i < n; i++) {
-    //   eta_remaining(i) = Xfix.row(i).dot(betaF) + Xrand.row(i).dot(betaR);
-    //   mu(i) = exp(eta(i) + eta_remaining(i) + Xoffset(i));
-    // }
   }
   void setLogTheta(const Scalar log_theta_) {
     log_theta = log_theta_;
@@ -566,8 +526,9 @@ public:
 
   void derivative_coef() {
     // regenerate
+    phiKa = K * phi + a;
     for (int j = 0; j < (kw - 1); j++) {
-      phi_long(j + 1) = phi(j);
+      phi_long(j + 1) = phiKa(j);
     }
     alpha_w_C_denominator = sqrt(phi_long.dot(Dw * phi_long));
     alpha_w_C = phi_long / alpha_w_C_denominator;
@@ -622,25 +583,25 @@ public:
     //             he_alpha_f_log_smoothing_f_vec.transpose(), 0, 0, he_log_smoothing_f_scalar, 0;
     //             0, he_phi_log_smoothing_w_vec.transpose(), 0, 0, he_log_smoothing_w_scalar]
     he_s_u_mat.block(0, 0, kE, kE)  = he_alpha_f_mat;
-    he_s_u_mat.block(0, kE, kE, kw-1) = he_alpha_f_phi_mat;
-    he_s_u_mat.block(kE, 0, kw-1, kE) = he_alpha_f_phi_mat.transpose();
-    he_s_u_mat.block(kE, kE, kw-1, kw-1) = he_phi_mat;
+    he_s_u_mat.block(0, kE, kE, kwopt) = he_alpha_f_phi_mat;
+    he_s_u_mat.block(kE, 0, kwopt, kE) = he_alpha_f_phi_mat.transpose();
+    he_s_u_mat.block(kE, kE, kwopt, kwopt) = he_phi_mat;
 
 
-    he_s_u_mat.block(kE+kw-1, kE+kw-1, kbetaR, kbetaR) = he_betaR_mat;
-    he_s_u_mat.block(kE+kw-1+kbetaR, kE+kw-1+kbetaR, kbetaF, kbetaF) = he_betaF_mat;
+    he_s_u_mat.block(kE+kwopt, kE+kwopt, kbetaR, kbetaR) = he_betaR_mat;
+    he_s_u_mat.block(kE+kwopt+kbetaR, kE+kwopt+kbetaR, kbetaF, kbetaF) = he_betaF_mat;
 
-    he_s_u_mat.block(0,kE+kw-1,kE,kbetaR) = he_alpha_f_betaR_mat;
-    he_s_u_mat.block(kE,kE+kw-1,kw-1,kbetaR) = he_phi_betaR_mat;
-    he_s_u_mat.block(0,kE+kw-1+kbetaR,kE,kbetaF) = he_alpha_f_betaF_mat;
-    he_s_u_mat.block(kE,kE+kw-1+kbetaR,kw-1,kbetaF) = he_phi_betaF_mat;
-    he_s_u_mat.block(kE+kw-1, kE+kw-1+kbetaR, kbetaR, kbetaF) = he_betaR_betaF_mat;
+    he_s_u_mat.block(0,kE+kwopt,kE,kbetaR) = he_alpha_f_betaR_mat;
+    he_s_u_mat.block(kE,kE+kwopt,kwopt,kbetaR) = he_phi_betaR_mat;
+    he_s_u_mat.block(0,kE+kwopt+kbetaR,kE,kbetaF) = he_alpha_f_betaF_mat;
+    he_s_u_mat.block(kE,kE+kwopt+kbetaR,kwopt,kbetaF) = he_phi_betaF_mat;
+    he_s_u_mat.block(kE+kwopt, kE+kwopt+kbetaR, kbetaR, kbetaF) = he_betaR_betaF_mat;
 
-    he_s_u_mat.block(kE+kw-1,0,kbetaR,kE) = he_alpha_f_betaR_mat.transpose();
-    he_s_u_mat.block(kE+kw-1,kE,kbetaR,kw-1) = he_phi_betaR_mat.transpose();
-    he_s_u_mat.block(kE+kw-1+kbetaR,0,kbetaF,kE) = he_alpha_f_betaF_mat.transpose();
-    he_s_u_mat.block(kE+kw-1+kbetaR,kE,kbetaF,kw-1) = he_phi_betaF_mat.transpose();
-    he_s_u_mat.block(kE+kw-1+kbetaR, kE+kw-1, kbetaF, kbetaR) = he_betaR_betaF_mat.transpose();
+    he_s_u_mat.block(kE+kwopt,0,kbetaR,kE) = he_alpha_f_betaR_mat.transpose();
+    he_s_u_mat.block(kE+kwopt,kE,kbetaR,kwopt) = he_phi_betaR_mat.transpose();
+    he_s_u_mat.block(kE+kwopt+kbetaR,0,kbetaF,kE) = he_alpha_f_betaF_mat.transpose();
+    he_s_u_mat.block(kE+kwopt+kbetaR,kE,kbetaF,kwopt) = he_phi_betaF_mat.transpose();
+    he_s_u_mat.block(kE+kwopt+kbetaR, kE+kwopt, kbetaF, kbetaR) = he_betaR_betaF_mat.transpose();
 
     // make it symmetric. Comment out ...
     // he_s_u_mat = (he_s_u_mat + he_s_u_mat.transpose())/2.0;
@@ -714,7 +675,7 @@ public:
 
     Mat deriv_g = Ddense - deriv_g2;
     // Remove the first column
-    Mat out = deriv_g.block(0, 1, kw, kw - 1);
+    Mat out = deriv_g.block(0, 1, kw, kw - 1) * K;
     return out;
   }
 
@@ -737,7 +698,7 @@ public:
         Mat m2 = -1.0 * tmp1* Dw + 3.0 * tmp2 * Dwphi * Dwphi.transpose();
         outlarge = -1.0 * m1 + m2; // or m1 - m2 or m2 - m1
       }
-      out.push_back(outlarge.block(1, 1, kw-1, kw-1));
+      out.push_back(K.transpose() * outlarge.block(1, 1, kw-1, kw-1) * K);
     }
     return out;
   }
@@ -800,25 +761,17 @@ public:
       out1 += d2logdensity_dmudmu_vec(i) * dmu_dw_mat.row(i).transpose() * dmu_dw_mat.row(i);
       out2 += dlogdensity_dmu_vec(i) * (mu(i) * dlogmu_dw_mat.row(i).transpose() * dlogmu_dw_mat.row(i) + mu(i) * (BsplinevecCon2nd(E(i), knots_f, 4, Zf).dot(alpha_f)) * B_inner.row(i).transpose() * B_inner.row(i));
     }
-    Mat Sw_large(kw, kw);
-    Sw_large.setZero();
-    Sw_large.block(1, 1, kw-1, kw-1) = Sw;
     return - out1 - out2 + smoothing_w*Sw_large;
   }
 
   Mat he_phi () {
     Mat out1 = dw_dphi_mat.transpose() * he_alpha_w_mat * dw_dphi_mat;
-    Mat out2(kw-1, kw-1);
+    Mat out2(kwopt, kwopt);
     out2.setZero();
 
-    Vec gr_pen_w = smoothing_w * Sw * alpha_w_C_pen;
-    Vec gr_pen_w_long(kw);
-    gr_pen_w_long(0) = 0.0;
-    for (int j = 0; j < (kw - 1); j++) {
-      gr_pen_w_long(j + 1) = gr_pen_w(j);
-    }
+    Vec gr_pen_w = smoothing_w * Sw_large * alpha_w_C;
 
-    Vec gr_alpha_w_vec = - dmu_dw_mat.transpose() * dlogdensity_dmu_vec + gr_pen_w_long;
+    Vec gr_alpha_w_vec = - dmu_dw_mat.transpose() * dlogdensity_dmu_vec + gr_pen_w;
 
     for (int s = 0; s < kw; s++) {
       out2 = out2 + gr_alpha_w_vec(s) * d2w_dphidphi_list.at(s);
@@ -866,8 +819,8 @@ public:
     return - out1 - out2;
   }
   Mat he_phi_betaR () {
-    Mat out1(kw-1, kbetaR);
-    Mat out2(kw-1, kbetaR);
+    Mat out1(kwopt, kbetaR);
+    Mat out2(kwopt, kbetaR);
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
@@ -877,8 +830,8 @@ public:
     return - out1 - out2;
   }
   Mat he_phi_betaF () {
-    Mat out1(kw-1, kbetaF);
-    Mat out2(kw-1, kbetaF);
+    Mat out1(kwopt, kbetaF);
+    Mat out2(kwopt, kbetaF);
     out1.setZero();
     out2.setZero();
     for (int i = 0; i < n; i++) {
@@ -910,7 +863,7 @@ public:
     Mat LU = lu.matrixLU();
     // Scalar c = lu.permutationP().determinant(); // -1 or 1
     Scalar lii;
-    for (int i = 0; i < (kw+kE-1+kbetaR+kbetaF); i++) {
+    for (int i = 0; i < (kwopt+kE+kbetaR+kbetaF); i++) {
       lii = LU(i,i);
       // std::cout << "lii : " << CppAD::Value(lii) << std::endl;
       // std::cout << "c : " << CppAD::Value(c) << std::endl;

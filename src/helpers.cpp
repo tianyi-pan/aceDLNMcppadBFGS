@@ -646,8 +646,10 @@ List Integral_interpolate(Eigen::VectorXd knots_x, Eigen::VectorXd knots_w, int 
   int Nt = t.size();
   double tt;
 
-  Eigen::MatrixXd AlphaxD(Nt, kw); // output
-  Eigen::VectorXd AlphaxDi(kw);
+  int nalphaw = Zw.cols() + 1; 
+  
+  Eigen::MatrixXd AlphaxD(Nt, nalphaw); // output
+  Eigen::VectorXd AlphaxDi(nalphaw);
 
 
   double Xt2i = 0.0;
@@ -673,9 +675,9 @@ List Integral_interpolate(Eigen::VectorXd knots_x, Eigen::VectorXd knots_w, int 
 
   Eigen::VectorXd knots_x_I;
   Eigen::VectorXd Gx(4);
-  Eigen::MatrixXd Gw(kw, 4);
+  Eigen::MatrixXd Gw(nalphaw, 4);
 
-  Eigen::VectorXd tmpw(kw);
+  Eigen::VectorXd tmpw(nalphaw);
   Eigen::MatrixXd P(4, 4);
   // Eigen::PartialPivLU<Eigen::MatrixXd> luP(P); // Perform LU decomposition for solving linear system.
   // obtain the P matrix
@@ -842,7 +844,7 @@ List Integral_interpolate(Eigen::VectorXd knots_x, Eigen::VectorXd knots_w, int 
   }
 
   // std::cout << "Finish Obtain alpha_x * D ... " << std::endl;
-  Eigen::MatrixXd Dw(kw, kw);
+  Eigen::MatrixXd Dw(nalphaw, nalphaw);
   if(OnlyAlphaxD){
     return List::create(Named("AlphaxD") = AlphaxD);
   }else{
