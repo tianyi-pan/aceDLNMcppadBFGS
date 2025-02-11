@@ -29,6 +29,14 @@ ConditionalAIC_nosmooth <- function(R_y, R_B_inner, R_knots_f, R_Sw, R_Sf, R_Dw,
     .Call(`_aceDLNMcppadBFGS_ConditionalAIC_nosmooth`, R_y, R_B_inner, R_knots_f, R_Sw, R_Sf, R_Dw, R_Xfix, R_Zf, R_Xoffset, R_alpha_f, R_phi, R_log_theta, R_log_smoothing_f, R_log_smoothing_w, R_betaF)
 }
 
+BsplinevecCon1st <- function(x, t, p, Z) {
+    .Call(`_aceDLNMcppadBFGS_BsplinevecCon1st`, x, t, p, Z)
+}
+
+BsplinevecCon2nd <- function(x, t, p, Z) {
+    .Call(`_aceDLNMcppadBFGS_BsplinevecCon2nd`, x, t, p, Z)
+}
+
 knotindex <- function(x, t) {
     .Call(`_aceDLNMcppadBFGS_knotindex`, x, t)
 }

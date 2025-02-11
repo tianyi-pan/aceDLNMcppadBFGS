@@ -211,6 +211,34 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// BsplinevecCon1st
+Eigen::VectorXd BsplinevecCon1st(double x, const Eigen::VectorXd& t, int p, Eigen::MatrixXd Z);
+RcppExport SEXP _aceDLNMcppadBFGS_BsplinevecCon1st(SEXP xSEXP, SEXP tSEXP, SEXP pSEXP, SEXP ZSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type t(tSEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type Z(ZSEXP);
+    rcpp_result_gen = Rcpp::wrap(BsplinevecCon1st(x, t, p, Z));
+    return rcpp_result_gen;
+END_RCPP
+}
+// BsplinevecCon2nd
+Eigen::VectorXd BsplinevecCon2nd(double x, const Eigen::VectorXd& t, int p, Eigen::MatrixXd Z);
+RcppExport SEXP _aceDLNMcppadBFGS_BsplinevecCon2nd(SEXP xSEXP, SEXP tSEXP, SEXP pSEXP, SEXP ZSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type t(tSEXP);
+    Rcpp::traits::input_parameter< int >::type p(pSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type Z(ZSEXP);
+    rcpp_result_gen = Rcpp::wrap(BsplinevecCon2nd(x, t, p, Z));
+    return rcpp_result_gen;
+END_RCPP
+}
 // knotindex
 int knotindex(double x, Eigen::VectorXd t);
 RcppExport SEXP _aceDLNMcppadBFGS_knotindex(SEXP xSEXP, SEXP tSEXP) {
@@ -423,6 +451,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_aceDLNMcppadBFGS_aceDLNMopt_nosmooth", (DL_FUNC) &_aceDLNMcppadBFGS_aceDLNMopt_nosmooth, 16},
     {"_aceDLNMcppadBFGS_aceDLNMCI_nosmooth", (DL_FUNC) &_aceDLNMcppadBFGS_aceDLNMCI_nosmooth, 20},
     {"_aceDLNMcppadBFGS_ConditionalAIC_nosmooth", (DL_FUNC) &_aceDLNMcppadBFGS_ConditionalAIC_nosmooth, 15},
+    {"_aceDLNMcppadBFGS_BsplinevecCon1st", (DL_FUNC) &_aceDLNMcppadBFGS_BsplinevecCon1st, 4},
+    {"_aceDLNMcppadBFGS_BsplinevecCon2nd", (DL_FUNC) &_aceDLNMcppadBFGS_BsplinevecCon2nd, 4},
     {"_aceDLNMcppadBFGS_knotindex", (DL_FUNC) &_aceDLNMcppadBFGS_knotindex, 2},
     {"_aceDLNMcppadBFGS_Bspline", (DL_FUNC) &_aceDLNMcppadBFGS_Bspline, 4},
     {"_aceDLNMcppadBFGS_Bsplinevec", (DL_FUNC) &_aceDLNMcppadBFGS_Bsplinevec, 3},

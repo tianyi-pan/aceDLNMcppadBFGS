@@ -153,6 +153,7 @@ Eigen::VectorXd Bsplinevec1st(double x, const Eigen::VectorXd& t,int p) {
   return b;
 }
 
+// [[Rcpp::export]]
 Eigen::VectorXd BsplinevecCon1st(double x, const Eigen::VectorXd& t, int p, Eigen::MatrixXd Z) {
   int m = t.size() - p;
   Eigen::VectorXd b(m);
@@ -172,7 +173,7 @@ Eigen::VectorXd Bsplinevec2nd(double x, const Eigen::VectorXd& t,int p) {
   return b;
 }
 
-
+// [[Rcpp::export]]
 Eigen::VectorXd BsplinevecCon2nd(double x, const Eigen::VectorXd& t,int p, Eigen::MatrixXd Z) {
   int m = t.size() - p;
   Eigen::VectorXd b(m);

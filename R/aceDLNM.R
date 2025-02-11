@@ -72,6 +72,7 @@ aceDLNM <- function(formula,
                     kx.per500 = 300,
                     E.min,
                     conL = FALSE,
+                    conLorder = 1,
                     pc = NULL,
                     par.start, par.fix, upper.bound,
                     CI = 0.95,
@@ -193,13 +194,48 @@ aceDLNM <- function(formula,
   Zwnew <- Zw %*% Uwpen
 
   if(conL) {
-    cL <- c(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew)
-    K <- matrix(0, nrow = kw-1, ncol = kw-2)
-    a <- rep(0, kw-1)
-    K[1:(kw-2), 1:(kw-2)] <- diag(1, nrow = kw-2, ncol = kw-2)
-    K[kw-1,] <- -cL[1:(kw-2)]/cL[kw-1]
-    a[kw-1] <- -1/cL[kw-1]
-    # phi <- K %*% phim + a
+    ## constraint: Ax + b = 0
+    ## unconstrained parameter: y = N y + A^{-} (-b) = K * y + a
+    ## where A^{-} is the pseduo-inv of A, N is null space of A such that AN = 0
+    if(conLorder == 0){
+      A <- rbind(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew)
+      b <- matrix(c(-1), nrow = 1)
+    } else if (conLorder == 1) {
+      A <- rbind(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew,
+                 BsplinevecCon1st(maxLreal, knots_w, 4, Zwnew))
+      b <- matrix(c(-1,0), nrow = 2)
+    } else if (conLorder == 2) {
+      A <- rbind(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew,
+                 BsplinevecCon1st(maxLreal, knots_w, 4, Zwnew),
+                 BsplinevecCon2nd(maxLreal, knots_w, 4, Zwnew))
+      b <- matrix(c(-1,0,0), nrow = 3)
+    } else {
+      warning("constraint on higher order than 2 is not supported yet. Use second-order derivative here.")
+      A <- rbind(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew,
+                 BsplinevecCon1st(maxLreal, knots_w, 4, Zwnew),
+                 BsplinevecCon2nd(maxLreal, knots_w, 4, Zwnew))
+      b <- matrix(c(-1,0,0), nrow = 3)
+    }
+
+
+
+
+    QRA <- qr(t(A))
+    QA <- qr.Q(QRA, complete = TRUE)
+    K <- QA[,-seq_len(QRA$rank)]
+    a <- as.vector(MASS::ginv(A) %*% b)
+    ## check:
+    ### phi0 = K %*% rep(1, kw-3) + a
+    ### A %*% phi0 + b == 0. PASS!
+
+    ## naive way:
+    # cL <- c(mgcv::PredictMat(SSw, data = data.frame(l = maxLreal)) %*% Zwnew)
+    # K <- matrix(0, nrow = kw-1, ncol = kw-2)
+    # a <- rep(0, kw-1)
+    # K[1:(kw-2), 1:(kw-2)] <- diag(1, nrow = kw-2, ncol = kw-2)
+    # K[kw-1,] <- -cL[1:(kw-2)]/cL[kw-1]
+    # a[kw-1] <- -1/cL[kw-1]
+    ## phi <- K %*% phim + a
   } else {
     K <- diag(1, nrow = kw-1, ncol = kw-1)
     a <- rep(0, kw-1)
@@ -512,11 +548,8 @@ aceDLNM <- function(formula,
 
 
   ## set starting values
-  if(conL) {
-    phi.init.default  <- rep(1,kw-2) # additional constraint: w(L) = 0
-  } else {
-    phi.init.default  <- rep(1,kw-1)
-  }
+
+  phi.init.default  <- rep(1,ncol(K)) # additional constraint: w(L) = 0
 
   alpha_f.init.default <- rep(0,kE-1)
 
@@ -886,6 +919,7 @@ aceDLNM <- function(formula,
 
   ## constraint: w(L) = 0
   out$conL <- conL
+  out$conLorder <- conLorder
   ## return data
   out$data <- list(maxL = maxL,
                    B_inner = B_inner,

@@ -20,6 +20,7 @@ aceDLNM(
   kx.per500 = 300,
   E.min,
   conL = FALSE,
+  conLorder = 1,
   pc = NULL,
   par.start,
   par.fix,
