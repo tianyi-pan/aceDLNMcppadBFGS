@@ -268,9 +268,8 @@ aceDLNM <- function(formula,
   if(verbose) cat("****** Start prepraration ****** \n")
   DLprepare <- lapply(sXdatlist, function(sXdati){
     x <- sXdati$x
-    y <- sXdati$y
     t <- sXdati$t
-    Nti <- length(y) - maxL
+    Nti <- length(x) - maxL
     if((kx.per500 > 300) || (interpolate == TRUE)) {
       # if(verbose) cat("Interpolate the exposure process. \n")
       kx <- Nti+maxL + 4 + 2 # number of knots for X(t)
@@ -324,7 +323,6 @@ aceDLNM <- function(formula,
     ### 0.2 Integration
     removed.t <- t[1:maxL]
     t <- t[-(1:maxL)] # delete the first maxL days
-    y <- y[-(1:maxL)] # delete the first maxL days
     x <- x[-(1:maxL)] # delete the first maxL days
 
     ### integration
@@ -378,7 +376,10 @@ aceDLNM <- function(formula,
 
   sXdat <- do.call("rbind", sXdatlist)
 
-
+  # remove NA rows
+  na.id <- is.na(sXdat$y)
+  sXdat <- sXdat[!na.id, ]
+  B_inner <- B_inner[!na.id, ]
 
   ## 1. time-varying fixed effects
   if(!is.null(fe.varying)) {
