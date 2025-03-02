@@ -1602,7 +1602,7 @@ void Inner(Model& modelobj, bool verbose) {
       if(hasNaN(step)){
         if (resetitr < maxreset){
           resetitr++;
-          phi.setZero(); // reset alpha_f
+          phi.setOnes(); // reset alpha_f
           modelobj.setPhi(phi);
           if(verbose) std::cout << "reset phi as 0 because of nan step" << std::endl;
           itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
@@ -1665,7 +1665,7 @@ void Inner(Model& modelobj, bool verbose) {
       if (modelobj.converge != 0) {
         if (resetitr < maxreset){
           resetitr++;
-          phi.setZero(); // reset alpha_f
+          phi.setOnes(); // reset alpha_f
           modelobj.setPhi(phi);
           if(verbose) std::cout << "reset phi as 0 because of divergence" << std::endl;
           itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
@@ -1698,7 +1698,7 @@ void Inner(Model& modelobj, bool verbose) {
         if (modelobj.converge != 0) {
           if (resetitr < maxreset){
             resetitr++;
-            phi.setZero(); // reset alpha_f
+            phi.setOnes(); // reset alpha_f
             modelobj.setPhi(phi);
             if(verbose) std::cout << "reset phi as 0 because of divergence" << std::endl;
             itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
@@ -1732,7 +1732,7 @@ void Inner(Model& modelobj, bool verbose) {
         if (modelobj.converge != 0) {
           if (resetitr < maxreset){
             resetitr++;
-            phi.setZero(); // reset alpha_f
+            phi.setOnes(); // reset alpha_f
             modelobj.setPhi(phi);
             if(verbose) std::cout << "reset phi as 0 because of divergence" << std::endl;
             itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
@@ -1747,7 +1747,7 @@ void Inner(Model& modelobj, bool verbose) {
       if (std::isnan(s_tmp)) {
         if (resetitr < maxreset){
           resetitr++;
-          phi.setZero(); // reset alpha_f
+          phi.setOnes(); // reset alpha_f
           modelobj.setPhi(phi);
           if(verbose) std::cout << "reset phi as 0 because of nan function" << std::endl;
           itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
@@ -1765,7 +1765,7 @@ void Inner(Model& modelobj, bool verbose) {
         if (stepcounter > maxnonmovingsteps) {
           if (resetitr < maxreset){
             resetitr++;
-            phi.setZero(); // reset alpha_f
+            phi.setOnes(); // reset alpha_f
             modelobj.setPhi(phi);
             if(verbose) std::cout << "reset phi as 0 because of non-moving" << std::endl;
             itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
@@ -1783,7 +1783,7 @@ void Inner(Model& modelobj, bool verbose) {
       if((itr == maxitr) & (g.norm() >= largereps)) {
         if (resetitr < maxreset){
           resetitr++;
-          phi.setZero(); // reset alpha_f
+          phi.setOnes(); // reset alpha_f
           modelobj.setPhi(phi);
           if(verbose) std::cout << "reset phi as 0. The last one" << std::endl;
           itr = std::max(0, itr - additr); // itr - additr if itr > additr. allow further additr iterations after resetting.
