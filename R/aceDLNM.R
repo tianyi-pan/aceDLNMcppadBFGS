@@ -698,8 +698,14 @@ aceDLNM <- function(formula,
       expr = {
         ## fit a GAM using bam()
         y.mean <- mean(sXdat$y, na.rm = TRUE)
+      
+        wl.discrete <- 1 - (0:maxL)/maxL
+        wl.discrete <- wl.discrete/sqrt(sum(wl.discrete^2))
+        sXdat$x.avglag <- apply(sapply(1:(maxL+1), function(ii) {
+          dplyr::lag(sXdat$x, ii-1) * wl.discrete[ii]
+        }), 1, sum)
 
-        formula.mgcv <- paste0("y~s(x, bs='bs', k = ", kE, ")")
+        formula.mgcv <- paste0("y~s(x.avglag, bs='bs', k = ", kE, ")")
 
         formula.list.mgcv <- Filter(Negate(is.null), formula.list[names(formula.list) %in% c("smooth","fe.varying")])
         if(length(formula.list.mgcv) > 0) {
@@ -722,7 +728,7 @@ aceDLNM <- function(formula,
         for (i in 1:length(par.start)) {
           if((par.start[i] > (upper.bound[i] - 1)) | (par.start[i] < lower.bound[i])) par.start[i] <- 7
         }
-        if(verbose) cat("Use results from mgcv::bam with same-day exposure as the initial guess for BFGS. \n ")
+        if(verbose) cat("Use results from mgcv::bam as the initial guess for BFGS. \n ")
       },
       # warning = function(w) {
       #   if(verbose) {
