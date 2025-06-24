@@ -23108,7 +23108,7 @@
     },
     {
         "file": "/Users/tianyi/Documents/Research/Air-pollution/DLNM/packages/aceDLNMcppadBFGS/src/aceDLNMeigenClass.hpp",
-        "file_last_write": 1741053244.0,
+        "file_last_write": 1741727505.0,
         "definitions": [
             {
                 "usr": "c:@F@choleskyAD#&$@N@Eigen@S@Matrix>#d#VI-1#VI-1#VI0#VI-1#VI-1#",
@@ -23141,7 +23141,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@F@knotindexEigen#d#1$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
+                "usr": "c:@F@knotindexEigen#d#$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
                 "kind": 6,
                 "parent_name": "",
                 "name": "knotindexEigen(double, const Eigen::VectorXd)",
@@ -23271,7 +23271,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setAlphaF#1$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
+                "usr": "c:@S@Model@F@setAlphaF#$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setAlphaF(const Eigen::VectorXd)",
@@ -23281,7 +23281,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setPhi#1$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
+                "usr": "c:@S@Model@F@setPhi#$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setPhi(const Eigen::VectorXd)",
@@ -23291,7 +23291,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setBetaF#1$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
+                "usr": "c:@S@Model@F@setBetaF#$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setBetaF(const Eigen::VectorXd)",
@@ -23301,7 +23301,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setBetaR#1$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
+                "usr": "c:@S@Model@F@setBetaR#$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setBetaR(const Eigen::VectorXd)",
@@ -23311,7 +23311,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setLogTheta#1d#",
+                "usr": "c:@S@Model@F@setLogTheta#d#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setLogTheta(const double)",
@@ -23321,7 +23321,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setLogSmoothingF#1d#",
+                "usr": "c:@S@Model@F@setLogSmoothingF#d#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setLogSmoothingF(const double)",
@@ -23331,7 +23331,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setLogSmoothingW#1d#",
+                "usr": "c:@S@Model@F@setLogSmoothingW#d#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setLogSmoothingW(const double)",
@@ -23341,7 +23341,7 @@
                 "hidden": false
             },
             {
-                "usr": "c:@S@Model@F@setLogsmoothing#1$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
+                "usr": "c:@S@Model@F@setLogsmoothing#$@N@Eigen@S@Matrix>#d#VI-1#VI1#VI0#VI-1#VI1#",
                 "kind": 7,
                 "parent_name": "Model",
                 "name": "setLogsmoothing(const Eigen::VectorXd)",
