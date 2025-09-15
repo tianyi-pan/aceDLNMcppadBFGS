@@ -270,6 +270,10 @@ aceDLNM <- function(formula,
   DLprepare <- lapply(sXdatlist, function(sXdati){
     x <- sXdati$x
     t <- sXdati$t
+
+    removed.t <- t[1:maxL] # removed id for the original t
+    t <- t - min(t) + 1 # set t starting at 1
+
     Nti <- length(x) - maxL
     if((kx.per500 > 300) || (interpolate == TRUE)) {
       # if(verbose) cat("Interpolate the exposure process. \n")
@@ -322,7 +326,6 @@ aceDLNM <- function(formula,
 
 
     ### 0.2 Integration
-    removed.t <- t[1:maxL]
     t <- t[-(1:maxL)] # delete the first maxL days
     x <- x[-(1:maxL)] # delete the first maxL days
 
@@ -599,7 +602,7 @@ aceDLNM <- function(formula,
       if(any(is.nan(betaF.init))) betaF.init <- betaF.init.default
       if(model.choice == "with.smooth"){
         betaR.init <- LAMLenv$mod$betaR.mod
-        if(any(is.nan(betaF.init))) betaR.init <- betaR.init.default
+        if(any(is.nan(betaR.init))) betaR.init <- betaR.init.default
 
         LAML.results <- aceDLNMopt(mod.address,
                                    ad.address,
@@ -699,7 +702,7 @@ aceDLNM <- function(formula,
       expr = {
         ## fit a GAM using bam()
         y.mean <- mean(sXdat$y, na.rm = TRUE)
-      
+
         wl.discrete <- 1 - (0:maxL)/maxL
         wl.discrete <- wl.discrete/sqrt(sum(wl.discrete^2))
         sXdat$x.avglag <- apply(sapply(1:(maxL+1), function(ii) {
