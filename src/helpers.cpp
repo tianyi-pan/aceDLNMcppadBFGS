@@ -920,15 +920,33 @@ List Integral_interpolate(Eigen::VectorXd knots_x, Eigen::VectorXd knots_w, int 
 // }
 
 
-
 // [[Rcpp::export]]
 Eigen::VectorXd Interpolate(Eigen::SparseMatrix<double> X, Eigen::VectorXd y) {
 
   Eigen::SparseMatrix<double> XtX = X.transpose() * X;
-  // Eigen::VectorXd beta = XtX.ldlt().solve(X.transpose() * y);
   Eigen::VectorXd Xty = X.transpose() * y;
   Eigen::SimplicialCholesky<Eigen::SparseMatrix<double>> chol(XtX);
-  Eigen::VectorXd beta = chol.solve(Xty);
+  // try sparse Cholesky decomposition first, which is faster when it works. 
+  // If it fails (e.g., due to numerical issues), then fall back to dense decomposition.
+  if (chol.info() == Eigen::Success) {
+    Eigen::VectorXd beta_sparse = chol.solve(Xty);
+    // check whether the interpolation is successful by checking the residual and the norm of beta_sparse.
+    Eigen::VectorXd resid = X * beta_sparse - y;
+    double y_norm = std::max(1.0, y.norm());
+    if (chol.info() == Eigen::Success &&
+        beta_sparse.allFinite() &&
+        resid.allFinite() &&
+        resid.norm() <= 1e-8 * y_norm &&
+        beta_sparse.norm() <= 30.0 * y_norm // check whether beta_sparse is not too large. 30.0 is an arbitrary. 
+      ) {
+      return beta_sparse;
+    }
+  }
+
+  // If sparse Cholesky fails, use dense decomposition which is safer.
+  Eigen::MatrixXd Xdense(X);
+  Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> cod(Xdense);
+  Eigen::VectorXd beta = cod.solve(y);
 
   return beta;
 }
