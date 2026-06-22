@@ -31,8 +31,10 @@ aceDLNM(
   delta.method = FALSE,
   eta = FALSE,
   hessian = FALSE,
+  control = NULL,
   GD = TRUE,
-  GD.grtol = 1,
+  GD.grtol = 0.1,
+  GD.restart = 1,
   check.BFGS = FALSE,
   verbose = TRUE
 )
@@ -107,7 +109,7 @@ Hessian matrix from \code{optim}, default \code{FALSE}.}
 \item{GD}{whether or not to use the gradient descent if BFGS fails (max gr >
 GD.grtol), default \code{TRUE}.}
 
-\item{GD.grtol}{the tolerance of maximum gradient, default 1. The maximum
+\item{GD.grtol}{the tolerance of maximum gradient, default 0.1. The maximum
 numbers of steps for gradient descent is 2. But the BFGS converges in most
 cases.}
 

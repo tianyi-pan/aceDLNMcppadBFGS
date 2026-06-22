@@ -47,7 +47,7 @@
 #'   Hessian matrix from \code{optim}, default \code{FALSE}.
 #' @param GD whether or not to use the gradient descent if BFGS fails (max gr >
 #'   GD.grtol), default \code{TRUE}.
-#' @param GD.grtol the tolerance of maximum gradient, default 1. The maximum
+#' @param GD.grtol the tolerance of maximum gradient, default 0.1. The maximum
 #'   numbers of steps for gradient descent is 2. But the BFGS converges in most
 #'   cases.
 #' @param verbose whether or not to print the progress and diagnostic
@@ -80,8 +80,10 @@ aceDLNM <- function(formula,
                     delta.method = FALSE,
                     eta = FALSE,
                     hessian = FALSE,
+                    control = NULL,
                     GD = TRUE,
-                    GD.grtol = 1,
+                    GD.grtol = 0.1,
+                    GD.restart = 1,
                     check.BFGS = FALSE,
                     verbose = TRUE) {
 
@@ -686,7 +688,9 @@ aceDLNM <- function(formula,
     if(model.choice == "with.smooth") par.fix <- rep(NA, 3+numsmooth)
   }
   par.fix.id <- !sapply(par.fix, is.na)
-
+  free.par.id <- which(!par.fix.id)
+  # theta is not checked for using gradient descent. 
+  non.theta.free.pos <- which(free.par.id != 1)
 
   ### model fitting
   if(verbose) {
@@ -757,43 +761,136 @@ aceDLNM <- function(formula,
   mod.address <- address.list$address.eigen
   ad.address <- address.list$address.cppad
 
-  opt.LAML <- optim(par.start[!par.fix.id],
-                  fn = function(par.){
-                                      par.fn <- par.fix
-                                      par.fn[!par.fix.id] <- par.
-                                      return(LAML.fn(par.fn))
-                                      }, # objective function
-                  gr = function(par.){
-                                      par.fn <- par.fix
-                                      par.fn[!par.fix.id] <- par.
-                                      return(LAML.gr(par.fn)[!par.fix.id])
-                                      }, # gradient function
-                  method = "L-BFGS-B",
-                  lower = lower.bound[!par.fix.id],
-                  upper = upper.bound[!par.fix.id],
-                  control = list(trace = verbose),
-                  hessian = hessian
-                  )
+
+  optim.control <- list(trace = verbose, 
+                        factr = 1e7 # default
+                        # pgtol = 0 # detault which turns off the gradient-based stopping rule. 
+                        )
+  if (!is.null(control)) optim.control[names(control)] <- control # merge user-specified control parameters with defaults
+
+
+
+
+  run_BFGS <- function(par.init) {
+    optim(par.init,
+          fn = function(par.){
+                              par.fn <- par.fix
+                              par.fn[!par.fix.id] <- par.
+                              return(LAML.fn(par.fn))
+                              }, # objective function
+          gr = function(par.){
+                              par.fn <- par.fix
+                              par.fn[!par.fix.id] <- par.
+                              return(LAML.gr(par.fn)[!par.fix.id])
+                              }, # gradient function
+          method = "L-BFGS-B",
+          lower = lower.bound[!par.fix.id],
+          upper = upper.bound[!par.fix.id],
+          control = optim.control,
+          hessian = hessian
+          )
+  }
+
+  max_gr_check <- function(par., gr.) {
+    at.bound <- (par. <= lower.bound[!par.fix.id] + 1e-8) |
+      (par. >= upper.bound[!par.fix.id] - 1e-8)
+    gr.check <- gr.[non.theta.free.pos[!at.bound[non.theta.free.pos]]]
+    if(length(gr.check) == 0) return(0)
+    max(abs(gr.check), na.rm = TRUE)
+  }
+
+  opt.LAML <- run_BFGS(par.start[!par.fix.id])
 
   if(all(opt.LAML$par == par.start[!par.fix.id])){
     ## get stuck in the starting values
     par.start[!par.fix.id] <- par.start[!par.fix.id]/2
-    opt.LAML <- optim(par.start[!par.fix.id],
-                      fn = function(par.){
-                                          par.fn <- par.fix
-                                          par.fn[!par.fix.id] <- par.
-                                          return(LAML.fn(par.fn))
-                                          }, # objective function
-                      gr = function(par.){
-                                          par.fn <- par.fix
-                                          par.fn[!par.fix.id] <- par.
-                                          return(LAML.gr(par.fn)[!par.fix.id])
-                                          }, # gradient function
-                      method = "L-BFGS-B",
-                      lower = lower.bound[!par.fix.id],
-                      upper = upper.bound[!par.fix.id],
-                      control = list(trace = verbose),
-                      hessian = hessian)
+    opt.LAML <- run_BFGS(par.start[!par.fix.id])
+  }
+
+  if(all(opt.LAML$par == par.start[!par.fix.id])){
+    ## get stuck in the starting values
+    par.start[!par.fix.id] <- par.start[!par.fix.id]/2
+    opt.LAML <- run_BFGS(par.start[!par.fix.id])
+  }
+
+  if(GD && length(opt.LAML$par) > 0 && GD.restart > 0) {
+    par.fn <- par.fix
+    par.fn[!par.fix.id] <- opt.LAML$par
+    gr.current <- LAML.gr(par.fn)[!par.fix.id]
+    max.gr.current <- max_gr_check(opt.LAML$par, gr.current)
+    if(!is.finite(max.gr.current)) max.gr.current <- Inf
+    for(restart.iter in seq_len(GD.restart)) {
+      if(max.gr.current <= GD.grtol) break
+
+      if(verbose) {
+        cat("BFGS stopped with max gradient ", max.gr.current,
+            ". Start gradient descent. \n", sep = "")
+      }
+
+      par.gd <- opt.LAML$par
+      fn.gd <- LAML.fn(par.fn)
+      gd.improved <- FALSE
+
+      # do gradient descent for at most 2 iterations to improve the parameters before restarting BFGS. 
+      for(gd.iter in seq_len(2)) {
+        par.fn <- par.fix
+        par.fn[!par.fix.id] <- par.gd
+        gr.gd <- LAML.gr(par.fn)[!par.fix.id]
+        max.gr.gd <- max_gr_check(par.gd, gr.gd)
+        if(!is.finite(max.gr.gd) || max.gr.gd <= GD.grtol) break
+
+        gr.norm <- sqrt(sum(gr.gd^2))
+        if(gr.norm == 0 || !is.finite(gr.norm)) break
+
+        direction <- gr.gd / max(1, gr.norm)
+        step <- 16
+        accepted <- FALSE
+        
+        # line search for the step size
+        for(ls.iter in seq_len(10)) {
+          par.try <- par.gd - step * direction
+          # ensure the parameters are within the bounds
+          par.try <- pmin(pmax(par.try, lower.bound[!par.fix.id]), upper.bound[!par.fix.id])
+          par.try.fn <- par.fix
+          par.try.fn[!par.fix.id] <- par.try
+          fn.try <- LAML.fn(par.try.fn)
+
+          if(is.finite(fn.try) && fn.try < fn.gd) {
+            par.gd <- par.try
+            fn.gd <- fn.try
+            gd.improved <- TRUE
+            accepted <- TRUE
+            break
+          }
+          step <- step / 2
+        }
+
+        if(!accepted) break
+      }
+
+      par.fn <- par.fix
+      par.fn[!par.fix.id] <- par.gd
+      LAML.fn(par.fn)
+
+      if(gd.improved) {
+        if(verbose) cat("Restart BFGS from the gradient descent step. \n")
+        opt.LAML <- run_BFGS(par.gd)
+      } else {
+        if(!exists("direction")) break
+        if(verbose) cat("line search failed to find an improved solution. \n")
+        if(verbose) cat("Restart BFGS anyway. \n")
+        par.restart <- opt.LAML$par - direction * 20
+        par.restart <- pmin(pmax(par.restart, lower.bound[!par.fix.id]), upper.bound[!par.fix.id])
+        opt.LAML <- run_BFGS(par.restart)
+      }
+
+      par.fn <- par.fix
+      par.fn[!par.fix.id] <- opt.LAML$par
+      LAML.fn(par.fn)
+      gr.current <- LAML.gr(par.fn)[!par.fix.id]
+      max.gr.current <- max_gr_check(opt.LAML$par, gr.current)
+      if(!is.finite(max.gr.current)) max.gr.current <- Inf
+    }
   }
 
 
